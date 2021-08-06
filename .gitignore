@@ -1,0 +1,4 @@
+.vscode/
+*.old
+*.exe
+*.obj
