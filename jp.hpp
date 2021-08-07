@@ -6,7 +6,7 @@
 #include <cstdlib>
 #include <cstring>
 
-#ifdef NDEBUG
+#if defined NDEBUG || defined _MSC_VER
 #define JP_PANIC(fmt, ...) exit(1);
 #else
 #define JP_PANIC(fmt, ...)                                                    \

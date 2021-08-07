@@ -4,13 +4,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define CFLAGS "-Wall", "-Wextra", "-pedantic", "-std=c++2a", "-ggdb"
-#define DEFAULT_CXX "g++"
+#define CXXFLAGS "-Wall", "-Wextra", "-pedantic", "-std=c++2a", "-ggdb"
+#define MSVC_CXXFLAGS "/std:c++latest"
 #define OUTPUT "jp"
+#define OUTPUT_FLAGS "-o" OUTPUT
+#define MSVC_OUTPUT_FLAGS "/Fe:" OUTPUT
 
 #ifdef _WIN32
+#define DEFAULT_CXX "cl"
 #define RUN ".\\" OUTPUT ".exe"
 #else
+#define DEFAULT_CXX "g++"
 #define RUN "./" OUTPUT
 #endif
 
@@ -28,7 +32,10 @@ void set_cxx()
 void build()
 {
     set_cxx();
-    CMD(cxx, CFLAGS, "test.cpp", "-o", OUTPUT);
+    if (strcmp(cxx, "cl") == 0)
+        CMD(cxx, MSVC_CXXFLAGS, "test.cpp", MSVC_OUTPUT_FLAGS);
+    else
+        CMD(cxx, CXXFLAGS, "test.cpp", OUTPUT_FLAGS);
 }
 
 void run()
