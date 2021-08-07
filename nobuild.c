@@ -28,7 +28,7 @@ void set_cxx()
 void build()
 {
     set_cxx();
-    CMD(cxx, CFLAGS, "main.cpp", "-o", OUTPUT);
+    CMD(cxx, CFLAGS, "test.cpp", "-o", OUTPUT);
 }
 
 void run()

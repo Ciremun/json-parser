@@ -1,3 +1,6 @@
+#ifndef JP_HPP_
+#define JP_HPP_
+
 #include <variant>
 #include <cstdio>
 #include <cstdlib>
@@ -15,7 +18,7 @@
 #endif
 
 struct JObject;
-
+JObject parse_json(const char *input);
 using JValue = std::variant<JObject, int, bool, char *, std::nullptr_t>;
 
 struct JPair
@@ -63,6 +66,7 @@ struct JObject
 
 enum class TokenKind
 {
+    none,
     open_curly,
     close_curly,
     open_quotation,
@@ -70,16 +74,19 @@ enum class TokenKind
     colon,
     comma,
     key_part,
-    value_part,
-    none
+    value_part
 };
 
 enum class State
 {
+    none,
     key,
-    value,
-    none
+    value
 };
+
+#endif // JP_HPP_
+
+#ifdef JP_IMPLEMENTATION
 
 JObject parse_json(const char *input)
 {
@@ -90,9 +97,10 @@ JObject parse_json(const char *input)
     JObject json;
     for (size_t pos = 0; input[pos] != '\0'; ++pos)
     {
-        if (input[pos] == ' ' ||
+        if (input[pos] == ' '  ||
             input[pos] == '\t' ||
-            input[pos] == '\n')
+            input[pos] == '\n' ||
+            input[pos] == '\r')
             continue;
         switch (input[pos])
         {
@@ -250,12 +258,4 @@ JObject parse_json(const char *input)
     return json;
 }
 
-#define JSON_INPUT "{\"test\": \"Hello, World!\", \"owo\": {\"pok\": \"pok_value\"}}"
-
-int main()
-{
-    JObject json = parse_json(JSON_INPUT);
-    printf("%s\n", json.obj("owo").str("pok"));
-    printf("%s\n", json.str("test"));
-    return 0;
-}
+#endif // JP_IMPLEMENTATION
