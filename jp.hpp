@@ -72,9 +72,7 @@ enum class TokenKind
     open_quotation,
     close_quotation,
     colon,
-    comma,
-    key_part,
-    value_part
+    comma
 };
 
 enum class State
