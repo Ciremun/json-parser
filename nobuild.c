@@ -9,7 +9,7 @@
 #define OUTPUT "jp"
 
 #ifdef _WIN32
-#define RUN ".\\" OUTPUT
+#define RUN ".\\" OUTPUT ".exe"
 #else
 #define RUN "./" OUTPUT
 #endif
