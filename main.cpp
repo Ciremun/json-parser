@@ -47,7 +47,7 @@ struct JObject
         count++;
     }
 
-    JValue operator[](const char* key)
+    JValue operator[](const char *key)
     {
         for (size_t i = 0; i < count; ++i)
             if (strcmp(key, this->pairs[i].key) == 0)
@@ -55,9 +55,14 @@ struct JObject
         JP_PANIC("key \"%s\" was not found", key);
     }
 
-    char* string_at(const char *key)
+    char *str(const char *key)
     {
         return std::get<char *>(this->operator[](key));
+    }
+
+    JObject obj(const char *key)
+    {
+        return std::get<JObject>(this->operator[](key));
     }
 };
 
@@ -90,7 +95,7 @@ JObject parse_json(const char *input)
     JObject json;
     for (size_t pos = 0; input[pos] != '\0'; ++pos)
     {
-        if (input[pos] == ' '  ||
+        if (input[pos] == ' ' ||
             input[pos] == '\t' ||
             input[pos] == '\n')
             continue;
@@ -129,7 +134,8 @@ JObject parse_json(const char *input)
         break;
         case ',':
         {
-            if (current_token_kind == TokenKind::close_quotation)
+            if (current_token_kind == TokenKind::close_quotation ||
+                current_token_kind == TokenKind::close_curly)
             {
                 json.add_pair(current_key, current_value);
                 current_token_kind = TokenKind::comma;
@@ -150,15 +156,46 @@ JObject parse_json(const char *input)
         break;
         case '{':
         {
-            if (current_token_kind == TokenKind::none || current_token_kind == TokenKind::colon)
+            switch (current_token_kind)
+            {
+            case TokenKind::none:
+            {
                 current_token_kind = TokenKind::open_curly;
-            else
+            }
+            break;
+            case TokenKind::colon:
+            {
+                size_t start_pos = pos;
+                size_t open_curly_count = 1;
+                size_t close_curly_count = 0;
+                do
+                {
+                    pos++;
+                    if (input[pos] == '{')
+                        open_curly_count++;
+                    else if (input[pos] == '}')
+                        close_curly_count++;
+                } while (open_curly_count - close_curly_count != 0);
+                size_t nested_object_string_size = pos - start_pos + 2;
+                char *nested_object_string = static_cast<char *>(malloc(nested_object_string_size));
+                memcpy(nested_object_string, input + start_pos, nested_object_string_size - 1);
+                nested_object_string[nested_object_string_size - 1] = '\0';
+                JObject nested_object = parse_json(nested_object_string);
+                current_value = static_cast<JValue *>(malloc(sizeof(JValue)));
+                new (current_value) JValue(nested_object);
+                current_token_kind = TokenKind::close_curly;
+                state = State::none;
+            }
+            break;
+            default:
                 goto process_char;
+            }
         }
         break;
         case '}':
         {
-            if (current_token_kind == TokenKind::close_quotation)
+            if (current_token_kind == TokenKind::close_quotation ||
+                current_token_kind == TokenKind::close_curly)
             {
                 json.add_pair(current_key, current_value);
                 current_token_kind = TokenKind::close_curly;
@@ -175,14 +212,14 @@ JObject parse_json(const char *input)
             {
             case TokenKind::open_quotation:
             {
-process_char:
+            process_char:
                 if (state == State::key)
                 {
                     size_t start_pos = pos;
                     do
                     {
                         pos++;
-                    } while (input[pos] != '"');
+                    } while (input[pos] != '"' && input[pos - 1] != '\\');
                     size_t key_size = pos - start_pos + 1;
                     current_key = static_cast<char *>(malloc(key_size));
                     memcpy(current_key, input + start_pos, key_size - 1);
@@ -196,9 +233,9 @@ process_char:
                     do
                     {
                         pos++;
-                    } while (input[pos] != '"');
+                    } while (input[pos] != '"' && input[pos - 1] != '\\');
                     size_t value_size = pos - start_pos + 1;
-                    char* value_string = static_cast<char *>(malloc(value_size));
+                    char *value_string = static_cast<char *>(malloc(value_size));
                     memcpy(value_string, input + start_pos, value_size - 1);
                     value_string[value_size - 1] = '\0';
                     current_value = static_cast<JValue *>(malloc(sizeof(JValue)));
@@ -218,13 +255,12 @@ process_char:
     return json;
 }
 
-#define JSON_INPUT "{\"test\": \"Hello, World!\", \"OwO\": \"Hewo, OwO!\"}"
+#define JSON_INPUT "{\"test\": \"Hello, World!\", \"owo\": {\"pok\": \"pok_value\"}}"
 
 int main()
 {
     JObject json = parse_json(JSON_INPUT);
-    printf("%s\n", json.string_at("test"));
-    printf("%s\n", json.string_at("OwO"));
-    printf("%s\n", json.string_at("uwu"));
+    printf("%s\n", json.obj("owo").str("pok"));
+    printf("%s\n", json.str("test"));
     return 0;
 }
