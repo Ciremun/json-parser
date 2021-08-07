@@ -5,11 +5,7 @@
 #include <cstring>
 
 #ifdef NDEBUG
-#define JP_PANIC(fmt, ...) \
-    do                     \
-    {                      \
-        exit(1);           \
-    } while (0)
+#define JP_PANIC(fmt, ...) exit(1);
 #else
 #define JP_PANIC(fmt, ...)                                                    \
     do                                                                        \
