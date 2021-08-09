@@ -5,7 +5,7 @@
 #include <string.h>
 
 #define CXXFLAGS "-Wall", "-Wextra", "-pedantic", "-std=c++2a", "-ggdb"
-#define MSVC_CXXFLAGS "/std:c++latest"
+#define MSVC_CXXFLAGS "/std:c++latest", "/Zc:preprocessor"
 #define OUTPUT "jp"
 #define OUTPUT_FLAGS "-o" OUTPUT
 #define MSVC_OUTPUT_FLAGS "/Fe:" OUTPUT
