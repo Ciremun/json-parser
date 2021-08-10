@@ -17,9 +17,9 @@ char *read_file_as_str(const char *path)
 int main()
 {
     char* input = read_file_as_str("input.json");
-    printf("%s\n", input);
+    // printf("%s\n", input);
     JObject json = parse_json(input);
-    printf("%s\n", json.obj("owo").str("pok"));
+    printf("%s\n", json.obj("owo").obj("owo").obj("owo").obj("owo").obj("owo").obj("owo").obj("owo").obj("owo").obj("owo").obj("owo").obj("owo").obj("owo").obj("owo").obj("owo").obj("owo").obj("owo").obj("owo").obj("owo").obj("owo").obj("owo").str("pok"));
     printf("%s\n", json.str("test"));
     return 0;
 }
