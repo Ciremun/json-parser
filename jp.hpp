@@ -53,10 +53,9 @@ struct Memory
     void *alloc(size_t size)
     {
         allocated += size;
-        if (allocated > commited)
+        if (allocated * 2 > commited)
         {
-            commit_size += allocated;
-            commit_size *= 2;
+            commit_size += size * 2;
             if (VirtualAlloc(start, commit_size, MEM_COMMIT, PAGE_READWRITE) == nullptr)
                 JP_PANIC("VirtualAlloc failed: %lu", GetLastError());
             commited += commit_size;
