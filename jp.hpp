@@ -113,7 +113,9 @@ struct JObject
 
     void add_pair(char *key, JValue *value)
     {
+#ifdef _WIN32
         pairs_mem.alloc(sizeof(JPair));
+#endif
         pairs[count].key = key;
         pairs[count].value = value;
         count++;
