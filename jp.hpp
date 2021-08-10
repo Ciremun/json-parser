@@ -27,34 +27,66 @@ struct JObject;
 JObject parse_json(const char *input);
 using JValue = std::variant<JObject, int, bool, char *, std::nullptr_t>;
 
+#ifdef _WIN32
+
 struct Memory
 {
-    static const unsigned long long capacity =
-        INTPTR_MAX == INT32_MAX ? 4294967295ULL : 1024ULL * 1024 * 1024 * 1024;
+    static const size_t reserved =
+        INTPTR_MAX == INT32_MAX ? 4294967295ULL : 16ULL * 1024 * 1024 * 1024;
     char *base;
     char *start;
+    size_t commited;
+    size_t allocated;
+    size_t commit_size;
 
-    Memory()
+    Memory() : allocated(0), commit_size(1024)
     {
-        base = static_cast<char *>(VirtualAlloc(nullptr, capacity, MEM_RESERVE, PAGE_READWRITE));
+        base = static_cast<char *>(VirtualAlloc(nullptr, reserved, MEM_RESERVE, PAGE_READWRITE));
         if (base == nullptr)
             JP_PANIC("VirtualAlloc failed: %lu", GetLastError());
+        if (VirtualAlloc(base, commit_size, MEM_COMMIT, PAGE_READWRITE) == nullptr)
+            JP_PANIC("VirtualAlloc failed: %lu", GetLastError());
+        commited = commit_size;
         start = base;
     }
 
     void *alloc(size_t size)
     {
-        if (VirtualAlloc(start, size, MEM_COMMIT, PAGE_READWRITE) == nullptr)
-            JP_PANIC("VirtualAlloc failed: %lu", GetLastError());
+        allocated += size;
+        if (allocated > commited)
+        {
+            commit_size += allocated;
+            commit_size *= 2;
+            if (VirtualAlloc(start, commit_size, MEM_COMMIT, PAGE_READWRITE) == nullptr)
+                JP_PANIC("VirtualAlloc failed: %lu", GetLastError());
+            commited += commit_size;
+        }
         start += size;
         return start - size;
     }
 
     void free()
     {
-        VirtualFree(base, start - base, MEM_RELEASE);
+        VirtualFree(base, commited, MEM_RELEASE);
     }
 };
+
+#else
+
+struct Memory
+{
+    void *alloc(size_t size)
+    {
+        return malloc(size);
+    }
+
+    void free()
+    {
+#pragma message("Memory::free() is not supported")
+    }
+};
+
+#endif // _WIN32
 
 struct JPair
 {
@@ -71,7 +103,11 @@ struct JObject
 
     JObject()
     {
+#ifdef _WIN32
         pairs = reinterpret_cast<JPair *>(pairs_mem.start);
+#else
+        pairs = reinterpret_cast<JPair *>(malloc(sizeof(JPair) * 16777216));
+#endif
         count = 0;
     }
 

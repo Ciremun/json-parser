@@ -1,63 +1,6 @@
 {
-    "test": "hello test",
+    "test": "Hello, World!",
     "owo": {
-        "pok": "hello pok",
-        "owo": {
-            "pok": "hello pok 2",
-            "owo": {
-                "pok": "hello pok 3",
-                "owo": {
-                    "pok": "hello pok 4",
-                    "owo": {
-                        "pok": "hello pok 5",
-                        "owo": {
-                            "pok": "hello pok 6",
-                            "owo": {
-                                "pok": "hello pok 7",
-                                "owo": {
-                                    "pok": "hello pok 8",
-                                    "owo": {
-                                        "pok": "hello pok 9",
-                                        "owo": {
-                                            "pok": "hello pok 10",
-                                            "owo": {
-                                                "pok": "hello pok 11",
-                                                "owo": {
-                                                    "pok": "hello pok 12",
-                                                    "owo": {
-                                                        "pok": "hello pok 13",
-                                                        "owo": {
-                                                            "pok": "hello pok 14",
-                                                            "owo": {
-                                                                "pok": "hello pok 15",
-                                                                "owo": {
-                                                                    "pok": "hello pok 16",
-                                                                    "owo": {
-                                                                        "pok": "hello pok 17",
-                                                                        "owo": {
-                                                                            "pok": "hello pok 18",
-                                                                            "owo": {
-                                                                                "pok": "hello pok 19",
-                                                                                "owo": {
-                                                                                    "pok": "hello pok 20"
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        "uwu": "uwu string"
     }
 }
