@@ -29,10 +29,10 @@ using JValue = std::variant<JObject, int, bool, char *, std::nullptr_t>;
 
 #ifdef _WIN32
 
+static size_t system_memory_size = 0;
+
 struct Memory
 {
-    static const size_t reserved =
-        INTPTR_MAX == INT32_MAX ? 4294967295ULL : 16ULL * 1024 * 1024 * 1024;
     char *base;
     char *start;
     size_t commited;
@@ -41,7 +41,14 @@ struct Memory
 
     Memory() : allocated(0), commit_size(1024)
     {
-        base = static_cast<char *>(VirtualAlloc(nullptr, reserved, MEM_RESERVE, PAGE_READWRITE));
+        if (system_memory_size == 0)
+        {
+            if (!GetPhysicallyInstalledSystemMemory(&system_memory_size))
+                system_memory_size = INTPTR_MAX == INT32_MAX ? 4294967295ULL : 16ULL * 1024 * 1024 * 1024;
+            else
+                system_memory_size *= 1024;
+        }
+        base = static_cast<char *>(VirtualAlloc(nullptr, system_memory_size, MEM_RESERVE, PAGE_READWRITE));
         if (base == nullptr)
             JP_PANIC("VirtualAlloc failed: %lu", GetLastError());
         if (VirtualAlloc(base, commit_size, MEM_COMMIT, PAGE_READWRITE) == nullptr)
