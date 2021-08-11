@@ -66,7 +66,8 @@ struct Memory
 
     void free()
     {
-        VirtualFree(base, commited, MEM_RELEASE);
+        if (VirtualFree(base, 0, MEM_RELEASE) == 0)
+            JP_PANIC("VirtualFree failed: %lu", GetLastError());
     }
 };
 
@@ -118,6 +119,15 @@ struct JObject
         pairs[count].key = key;
         pairs[count].value = value;
         count++;
+    }
+
+    void free()
+    {
+        for (size_t i = 0; i < count; ++i)
+            if(JObject *json = std::get_if<JObject>(pairs[i].value))
+                json->free();
+        pairs_mem.free();
+        kv_mem.free();
     }
 
     JValue operator[](const char *key)

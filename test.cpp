@@ -21,5 +21,7 @@ int main()
     JObject json = parse_json(input);
     printf("%s\n", json.str("test"));
     printf("%s\n", json.obj("owo").str("uwu"));
+    json.free();
+    free(input);
     return 0;
 }
