@@ -18,10 +18,12 @@ int main()
 {
     char* input = read_file_as_str("input.json");
     printf("%s\n", input);
-    JObject json = parse_json(input);
+    JsonParser parser(input);
+    JObject json = parser.parse();
     printf("%s\n", json.str("test"));
     printf("%s\n", json.obj("owo").str("uwu"));
-    json.free();
+    printf("%s\n", json.obj("owo").obj("deep").obj("dark").str("dungeon"));
+    parser.free();
     free(input);
     return 0;
 }
