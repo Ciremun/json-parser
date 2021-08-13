@@ -93,24 +93,24 @@ struct JObject
         pairs_count++;
     }
 
-    JValue operator[](const char *key)
+    JObject &operator[](const char *key)
     {
         for (size_t i = 0; i < pairs_count; ++i)
         {
             if (strcmp(key, pairs[i].key) == 0)
-                return *(pairs[i].value);
+                return reinterpret_cast<JObject &>(*(pairs[i].value));
         }
         JP_PANIC("key \"%s\" was not found", key);
     }
 
     char *str(const char *key)
     {
-        return std::get<char *>(this->operator[](key));
+        return reinterpret_cast<char *&>(this->operator[](key));
     }
 
-    JObject obj(const char *key)
+    JObject &obj(const char *key)
     {
-        return std::get<JObject>(this->operator[](key));
+        return this->operator[](key);
     }
 };
 
@@ -143,7 +143,7 @@ struct JsonParser
     size_t pairs_total;
     size_t pairs_commited;
 
-    JsonParser(const char* input) : input(input), pairs_total(0), pairs_commited(0)
+    JsonParser(const char *input) : input(input), pairs_total(0), pairs_commited(0)
     {
         for (size_t i = 0; input[i] != 0; ++i)
             if (input[i] == ':' && input[i - 1] == '"' && input[i - 2] != '\\')
@@ -364,8 +364,6 @@ struct JsonParser
         }
         return json;
     }
-
 };
-
 
 #endif // JP_IMPLEMENTATION
