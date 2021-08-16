@@ -146,6 +146,11 @@ struct JObject
         JP_PANIC("key \"%s\" was not found", key);
     }
 
+    bool boolean(const char *key)
+    {
+        return reinterpret_cast<bool &>(this->operator[](key));
+    }
+
     char *str(const char *key)
     {
         return reinterpret_cast<char *&>(this->operator[](key));
