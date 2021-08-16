@@ -1,6 +1,18 @@
 {
-    "test": "hello test",
+    "test": true,
+    "second_test": "Hello, World!",
     "owo": {
-        "pok": "hello pok"
-    }
+        "uwu": "Hello, UwU!",
+        "deep": {
+            "dark": {
+                "test_key_1": "test1",
+                "test_key_2": "test2",
+                "test_key_3": "test3",
+                "dungeon": "Hello, master!",
+                "test_key_4": "test4"
+            },
+            "fantasies": "69"
+        }
+    },
+    "test2": "again"
 }

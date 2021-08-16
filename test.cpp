@@ -5,10 +5,10 @@
 
 char *read_file_as_str(const char *path)
 {
-    FILE* f = fopen(path, "rb");
+    FILE *f = fopen(path, "rb");
     fseek(f, 0, SEEK_END);
     size_t size = ftell(f);
-    char* str = static_cast<char *>(calloc(1, size));
+    char *str = static_cast<char *>(calloc(1, size));
     rewind(f);
     fread(str, sizeof(char), size, f);
     return str;
@@ -16,10 +16,22 @@ char *read_file_as_str(const char *path)
 
 int main()
 {
-    char* input = read_file_as_str("input.json");
+    char *input = read_file_as_str("input.json");
     printf("%s\n", input);
-    JObject json = parse_json(input);
-    printf("%s\n", json.obj("owo").str("pok"));
-    printf("%s\n", json.str("test"));
+
+    JsonParser parser(input);
+    JObject json = parser.parse();
+
+    printf("%d\n", (bool &&)json["test"]);
+    printf("%d\n", json.boolean("test"));
+
+    char *string = (char *&&)json["owo"]["deep"]["dark"]["dungeon"];
+    printf("%s\n", string);
+
+    printf("%s\n", json.obj("owo").str("uwu"));
+
+    parser.free();
+    free(input);
+
     return 0;
 }
