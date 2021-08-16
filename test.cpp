@@ -22,7 +22,7 @@ int main()
     JsonParser parser(input);
     JObject json = parser.parse();
 
-    printf("%s\n", (char *&&)json["test"]);
+    printf("%d\n", (bool &&)json["test"]);
 
     char *string = (char *&&)json["owo"]["deep"]["dark"]["dungeon"];
     printf("%s\n", string);
