@@ -246,7 +246,7 @@ struct JsonParser
                     {
                         i++;
                         if (input[i] == '\0')
-                            JP_PANIC("unexpected end of file at %llu", i);
+                            JP_PANIC("unexpected end of file at %zu", i);
                         if (input[i] == '{')
                         {
                             size_t open_curly_count = 2;
@@ -254,7 +254,7 @@ struct JsonParser
                             {
                                 i++;
                                 if (input[i] == '\0')
-                                    JP_PANIC("unexpected end of file at %llu", i);
+                                    JP_PANIC("unexpected end of file at %zu", i);
                                 else if (input[i] == '{')
                                     open_curly_count++;
                                 else if (input[i] == '}')
@@ -276,7 +276,7 @@ struct JsonParser
                     {
                         pos++;
                         if (input[pos] == '\0')
-                            JP_PANIC("unexpected end of file at %llu", pos);
+                            JP_PANIC("unexpected end of file at %zu", pos);
                         else if (input[pos] == '{')
                             open_curly_count++;
                         else if (input[pos] == '}')
@@ -326,7 +326,7 @@ struct JsonParser
                         {
                             pos++;
                             if (input[pos] == '\0')
-                                JP_PANIC("unexpected end of file at %llu", pos);
+                                JP_PANIC("unexpected end of file at %zu", pos);
                         } while (input[pos] != '"' && input[pos - 1] != '\\');
                         size_t key_size = pos - start_pos + 1;
                         current_key = static_cast<char *>(json_memory.alloc(key_size));
@@ -342,7 +342,7 @@ struct JsonParser
                         {
                             pos++;
                             if (input[pos] == '\0')
-                                JP_PANIC("unexpected end of file at %llu", pos);
+                                JP_PANIC("unexpected end of file at %zu", pos);
                         } while (input[pos] != '"' && input[pos - 1] != '\\');
                         size_t value_size = pos - start_pos + 1;
                         char *value_string = static_cast<char *>(json_memory.alloc(value_size));
