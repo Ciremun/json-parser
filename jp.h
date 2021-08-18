@@ -5,7 +5,10 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #else
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif // _GNU_SOURCE
+#include <stdio.h>
 #include <sys/mman.h>
 #include <errno.h>
 #endif
@@ -14,14 +17,22 @@
 #include <string.h>
 #include <stdlib.h>
 
-#if defined(NDEBUG) || (defined(_MSC_VER) && !defined(__cplusplus))
+#if defined(NDEBUG)
 #define JP_PANIC(fmt, ...) exit(1)
-#else
+#elif (defined(__cplusplus)) || (!defined(__clang__) && defined(__GNUC__))
 #include <stdio.h>
 #define JP_PANIC(fmt, ...)                                                    \
     do                                                                        \
     {                                                                         \
         printf("[ERRO] L%d: " fmt "\n", __LINE__ __VA_OPT__(, ) __VA_ARGS__); \
+        exit(1);                                                              \
+    } while (0)
+#else
+#include <stdio.h>
+#define JP_PANIC(msg, ...)                                                    \
+    do                                                                        \
+    {                                                                         \
+        printf("[ERRO] L%d: " msg "\n", __LINE__);                            \
         exit(1);                                                              \
     } while (0)
 #endif
@@ -97,6 +108,23 @@ typedef struct
     size_t pairs_total;
     size_t pairs_commited;
 } JParser;
+
+#ifndef _WIN32
+int GetPhysicallyInstalledSystemMemory(size_t *output);
+#endif // _WIN32
+
+void json_memory_init(JMemory *memory);
+void *json_memory_alloc(JMemory *memory, size_t size);
+void json_memory_free(JMemory *memory);
+void json_object_init(JObject *jobject, JPair *pairs);
+void json_object_add_pair(JObject *jobject, char *key, JValue *value);
+JValue json_get(JObject *jobject, const char *key);
+JParser json_init(const char *input);
+JObject json_parse(JParser *jparser, const char *input);
+
+#endif // JP_H_
+
+#ifdef JP_IMPLEMENTATION
 
 #ifndef _WIN32
 int GetPhysicallyInstalledSystemMemory(size_t *output)
@@ -193,10 +221,6 @@ JValue json_get(JObject *jobject, const char *key)
     }
     JP_PANIC("key \"%s\" was not found", key);
 }
-
-#endif // JP_H_
-
-#ifdef JP_IMPLEMENTATION
 
 JParser json_init(const char *input)
 {
