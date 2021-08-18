@@ -1,9 +1,9 @@
+#define JP_IMPLEMENTATION
+#include "jp.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#define JP_IMPLEMENTATION
-#include "jp.h"
 
 char *read_file_as_str(const char *path)
 {
@@ -24,12 +24,9 @@ int main()
     char *input = read_file_as_str("input.json");
     printf("%s\n", input);
 
-    JParser parser;
-    jparser_init(&parser, input);
-
-    JObject json = parse_object(&parser, input);
-
-    JValue value = jobject_get(&json, "test");
+    JParser parser = json_init(input);
+    JObject json = json_parse(&parser, input);
+    JValue value = json_get(&json, "test");
 
     printf("value: %d\n", value.boolean);
 

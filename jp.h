@@ -1,43 +1,30 @@
 #ifndef JP_H_
 #define JP_H_
 
-#include <stdint.h>
-#include <string.h>
-#include <stdlib.h>
-
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #else
+#define _GNU_SOURCE
 #include <sys/mman.h>
 #include <errno.h>
 #endif
 
+#include <stdint.h>
+#include <string.h>
+#include <stdlib.h>
+
 #ifdef NDEBUG
 #define JP_PANIC(fmt, ...) exit(1);
-#define JP_PANIC_MSG(msg) exit(1);
-#define JP_PANIC_RAW() exit(1);
 #else
 #include <stdio.h>
-#define JP_PANIC(fmt, ...)                                      \
-    do                                                          \
-    {                                                           \
-        printf("[ERRO] L%d: " fmt "\n", __LINE__, __VA_ARGS__); \
-        exit(1);                                                \
+#define JP_PANIC(fmt, ...)                                                     \
+    do                                                                         \
+    {                                                                          \
+        printf("[ERRO] L%d: " fmt "\n", __LINE__ __VA_OPT__(, ) __VA_ARGS__);  \
+        exit(1);                                                               \
     } while (0)
 #endif
-#define JP_PANIC_MSG(msg)                          \
-    do                                             \
-    {                                              \
-        printf("[ERRO] L%d: " msg "\n", __LINE__); \
-        exit(1);                                   \
-    } while (0)
-#define JP_PANIC_RAW()                    \
-    do                                    \
-    {                                     \
-        printf("[ERRO] L%d\n", __LINE__); \
-        exit(1);                          \
-    } while (0)
 
 static size_t system_memory_size = 0;
 
@@ -106,7 +93,7 @@ typedef struct
 
 typedef struct
 {
-    Memory json_memory;
+    Memory memory;
     size_t pairs_total;
     size_t pairs_commited;
 } JParser;
@@ -116,7 +103,7 @@ int GetPhysicallyInstalledSystemMemory(size_t *output)
 {
     FILE *meminfo = fopen("/proc/meminfo", "r");
     if (meminfo == NULL)
-        JP_PANIC_MSG("Error opening file '/proc/meminfo'");
+        JP_PANIC("Error opening file '/proc/meminfo'");
 
     char line[256];
     while (fgets(line, sizeof(line), meminfo))
@@ -133,7 +120,7 @@ int GetPhysicallyInstalledSystemMemory(size_t *output)
 }
 #endif // _WIN32
 
-void memory_init(Memory *memory)
+void json_memory_init(Memory *memory)
 {
     if (system_memory_size == 0)
     {
@@ -157,7 +144,7 @@ void memory_init(Memory *memory)
     memory->start = memory->base;
 }
 
-void *memory_alloc(Memory *memory, size_t size)
+void *json_memory_alloc(Memory *memory, size_t size)
 {
 #ifdef _WIN32
     memory->allocated += size;
@@ -173,7 +160,7 @@ void *memory_alloc(Memory *memory, size_t size)
     return memory->start - size;
 }
 
-void memory_free(Memory *memory)
+void json_memory_free(Memory *memory)
 {
 #ifdef _WIN32
     if (VirtualFree(memory->base, 0, MEM_RELEASE) == 0)
@@ -184,20 +171,20 @@ void memory_free(Memory *memory)
 #endif // _WIN32
 }
 
-void jobject_init(JObject *jobject, JPair *pairs)
+void json_object_init(JObject *jobject, JPair *pairs)
 {
     jobject->pairs = pairs;
     jobject->pairs_count = 0;
 }
 
-void jobject_add_pair(JObject *jobject, char *key, JValue *value)
+void json_object_add_pair(JObject *jobject, char *key, JValue *value)
 {
     jobject->pairs[jobject->pairs_count].key = key;
     jobject->pairs[jobject->pairs_count].value = value;
     jobject->pairs_count++;
 }
 
-JValue jobject_get(JObject *jobject, const char *key)
+JValue json_get(JObject *jobject, const char *key)
 {
     for (size_t i = 0; i < jobject->pairs_count; ++i)
     {
@@ -211,18 +198,20 @@ JValue jobject_get(JObject *jobject, const char *key)
 
 #ifdef JP_IMPLEMENTATION
 
-void jparser_init(JParser *jparser, const char *input)
+JParser json_init(const char *input)
 {
-    memory_init(&jparser->json_memory);
-    jparser->pairs_total = 0;
-    jparser->pairs_commited = 0;
+    JParser parser;
+    json_memory_init(&parser.memory);
+    parser.pairs_total = 0;
+    parser.pairs_commited = 0;
     for (size_t i = 0; input[i] != 0; ++i)
         if (input[i] == ':' && input[i - 1] == '"' && input[i - 2] != '\\')
-            jparser->pairs_total++;
-    memory_alloc(&jparser->json_memory, sizeof(JPair) * jparser->pairs_total);
+            parser.pairs_total++;
+    json_memory_alloc(&parser.memory, sizeof(JPair) * parser.pairs_total);
+    return parser;
 }
 
-JObject parse_object(JParser *jparser, const char *input)
+JObject json_parse(JParser *jparser, const char *input)
 {
     TokenKind current_token_kind = TOKEN_KIND_NONE;
     State state = STATE_NONE;
@@ -231,9 +220,9 @@ JObject parse_object(JParser *jparser, const char *input)
     JValue *current_value = NULL;
 
     size_t pairs_offset = sizeof(JPair) * jparser->pairs_commited;
-    JPair *pairs_start = (JPair *)(jparser->json_memory.base + pairs_offset);
+    JPair *pairs_start = (JPair *)(jparser->memory.base + pairs_offset);
     JObject json;
-    jobject_init(&json, pairs_start);
+    json_object_init(&json, pairs_start);
 
     for (size_t pos = 0; input[pos] != '\0'; ++pos)
     {
@@ -257,12 +246,12 @@ JObject parse_object(JParser *jparser, const char *input)
                     if (input[pos] == '\0')
                         JP_PANIC("unexpected end of file at %zu", pos);
                 } while (pos - start_pos != 4);
-                char *bool_value = (char *)memory_alloc(&jparser->json_memory, 5);
+                char *bool_value = (char *)json_memory_alloc(&jparser->memory, 5);
                 memcpy(bool_value, input + start_pos, 4);
                 bool_value[4] = '\0';
                 if (strcmp(bool_value, "true") == 0)
                 {
-                    current_value = (JValue *)memory_alloc(&jparser->json_memory, sizeof(JValue));
+                    current_value = (JValue *)json_memory_alloc(&jparser->memory, sizeof(JValue));
                     current_value->type = JSON_BOOL;
                     current_value->boolean = 1;
                     current_token_kind = TOKEN_KIND_CLOSE_QUOTATION;
@@ -270,7 +259,7 @@ JObject parse_object(JParser *jparser, const char *input)
                     pos--;
                     break;
                 }
-                JP_PANIC_MSG("failed to parse 'true'");
+                JP_PANIC("failed to parse 'true'");
             }
             break;
             default:
@@ -305,7 +294,7 @@ JObject parse_object(JParser *jparser, const char *input)
             break;
             default:
             {
-                JP_PANIC_RAW();
+                JP_PANIC("unreachable, unknown token kind: %d", current_token_kind);
             }
             break;
             }
@@ -316,7 +305,7 @@ JObject parse_object(JParser *jparser, const char *input)
             if (current_token_kind == TOKEN_KIND_CLOSE_QUOTATION ||
                 current_token_kind == TOKEN_KIND_CLOSE_CURLY)
             {
-                jobject_add_pair(&json, current_key, current_value);
+                json_object_add_pair(&json, current_key, current_value);
                 current_token_kind = TOKEN_KIND_COMMA;
             }
             else
@@ -381,11 +370,11 @@ JObject parse_object(JParser *jparser, const char *input)
                         open_curly_count--;
                 } while (open_curly_count != 0);
                 size_t nested_object_string_size = pos - start_pos + 2;
-                char *nested_object_string = (char *)memory_alloc(&jparser->json_memory, sizeof(nested_object_string_size));
+                char *nested_object_string = (char *)json_memory_alloc(&jparser->memory, nested_object_string_size);
                 memcpy(nested_object_string, input + start_pos, nested_object_string_size - 1);
                 nested_object_string[nested_object_string_size - 1] = '\0';
-                JObject nested_object = parse_object(jparser, nested_object_string);
-                current_value = (JValue *)memory_alloc(&jparser->json_memory, sizeof(JValue));
+                JObject nested_object = json_parse(jparser, nested_object_string);
+                current_value = (JValue *)json_memory_alloc(&jparser->memory, sizeof(JValue));
                 current_value->type = JSON_OBJECT;
                 current_value->object = nested_object;
                 current_token_kind = TOKEN_KIND_CLOSE_CURLY;
@@ -402,7 +391,7 @@ JObject parse_object(JParser *jparser, const char *input)
             if (current_token_kind == TOKEN_KIND_CLOSE_QUOTATION ||
                 current_token_kind == TOKEN_KIND_CLOSE_CURLY)
             {
-                jobject_add_pair(&json, current_key, current_value);
+                json_object_add_pair(&json, current_key, current_value);
                 current_token_kind = TOKEN_KIND_CLOSE_CURLY;
             }
             else
@@ -428,7 +417,7 @@ JObject parse_object(JParser *jparser, const char *input)
                             JP_PANIC("unexpected end of file at %zu", pos);
                     } while (input[pos] != '"' && input[pos - 1] != '\\');
                     size_t key_size = pos - start_pos + 1;
-                    current_key = (char *)memory_alloc(&jparser->json_memory, key_size);
+                    current_key = (char *)json_memory_alloc(&jparser->memory, key_size);
                     memcpy(current_key, input + start_pos, key_size - 1);
                     current_key[key_size - 1] = '\0';
                     current_token_kind = TOKEN_KIND_CLOSE_QUOTATION;
@@ -444,10 +433,10 @@ JObject parse_object(JParser *jparser, const char *input)
                             JP_PANIC("unexpected end of file at %zu", pos);
                     } while (input[pos] != '"' && input[pos - 1] != '\\');
                     size_t value_size = pos - start_pos + 1;
-                    char *value_string = (char *)memory_alloc(&jparser->json_memory, value_size);
+                    char *value_string = (char *)json_memory_alloc(&jparser->memory, value_size);
                     memcpy(value_string, input + start_pos, value_size - 1);
                     value_string[value_size - 1] = '\0';
-                    current_value = (JValue *)memory_alloc(&jparser->json_memory, sizeof(JValue));
+                    current_value = (JValue *)json_memory_alloc(&jparser->memory, sizeof(JValue));
                     current_value->type = JSON_STRING;
                     current_value->string = value_string;
                     current_token_kind = TOKEN_KIND_CLOSE_QUOTATION;
@@ -457,7 +446,7 @@ JObject parse_object(JParser *jparser, const char *input)
             break;
             default:
             {
-                JP_PANIC_RAW();
+                JP_PANIC("unknown char: '%c'", input[pos]);
             }
             break;
             }

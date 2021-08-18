@@ -1,1 +1,6 @@
-{"test":true,"owo":{"uwu":"Hello, UwU!"}}
+{
+    "test": true,
+    "owo": {
+        "uwu": "Hello, UwU!"
+    }
+}
