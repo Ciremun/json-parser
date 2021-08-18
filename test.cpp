@@ -1,16 +1,21 @@
-#include <cstdio>
-
 #define JP_IMPLEMENTATION
-#include "jp.hpp"
+#include "jp.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 char *read_file_as_str(const char *path)
 {
     FILE *f = fopen(path, "rb");
     fseek(f, 0, SEEK_END);
     size_t size = ftell(f);
-    char *str = static_cast<char *>(calloc(1, size));
-    rewind(f);
-    fread(str, sizeof(char), size, f);
+    char *str = (char *)malloc(size + 1);
+    memset(str, 0, size);
+    fseek(f, 0, SEEK_SET);
+    fread(str, 1, size, f);
+    str[size] = '\0';
+    fclose(f);
     return str;
 }
 
@@ -19,18 +24,19 @@ int main()
     char *input = read_file_as_str("input.json");
     printf("%s\n", input);
 
-    JsonParser parser(input);
-    JObject json = parser.parse();
+    JParser parser = json_init(input);
+    JValue json = json_parse(&parser, input);
 
-    printf("%d\n", (bool &&)json["test"]);
-    printf("%d\n", json.boolean("test"));
+    // C++
+    printf("value: %s\n", json["owo"]["uwo"]["str"].string);
 
-    char *string = (char *&&)json["owo"]["deep"]["dark"]["dungeon"];
-    printf("%s\n", string);
+    // C
+    JObject owo = json_get(&json.object, "owo").object;
+    JObject uwo = json_get(&owo, "uwo").object;
+    char *str = json_get(&uwo, "str").string;
+    printf("value: %s\n", str);
 
-    printf("%s\n", json.obj("owo").str("uwu"));
-
-    parser.free();
+    json_memory_free(&parser.memory);
     free(input);
 
     return 0;
