@@ -14,8 +14,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-#ifdef NDEBUG
-#define JP_PANIC(fmt, ...) exit(1);
+#if defined(NDEBUG) || (defined(_MSC_VER) && !defined(__cplusplus))
+#define JP_PANIC(fmt, ...) exit(1)
 #else
 #include <stdio.h>
 #define JP_PANIC(fmt, ...)                                                    \
