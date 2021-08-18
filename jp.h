@@ -232,10 +232,8 @@ void json_object_add_pair(JObject *jobject, char *key, JValue *value)
 JValue json_get(JObject *jobject, const char *key)
 {
     for (size_t i = 0; i < jobject->pairs_count; ++i)
-    {
         if (strcmp(key, jobject->pairs[i].key) == 0)
             return *(jobject->pairs[i].value);
-    }
     JP_PANIC("key \"%s\" was not found", key);
 }
 
