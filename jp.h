@@ -4,18 +4,20 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#define EXIT(code) ExitProcess(code)
 #else
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif // _GNU_SOURCE
+#include <stdlib.h>
 #include <stdio.h>
 #include <sys/mman.h>
 #include <errno.h>
-#endif
+#define EXIT(code) exit(code)
+#endif // _WIN32
 
 #include <stdint.h>
 #include <string.h>
-#include <stdlib.h>
 
 #if (!defined(NDEBUG)) && ((defined(__cplusplus)) || (!defined(__clang__) && defined(__GNUC__)))
 #include <stdio.h>
@@ -23,11 +25,11 @@
     do                                                                        \
     {                                                                         \
         printf("[ERRO] L%d: " fmt "\n", __LINE__ __VA_OPT__(, ) __VA_ARGS__); \
-        exit(1);                                                              \
+        EXIT(1);                                                              \
     } while (0)
 #else
-#define JP_PANIC(fmt, ...) exit(1)
-#endif
+#define JP_PANIC(fmt, ...) EXIT(1)
+#endif // JP_PANIC
 
 static size_t system_memory_size = 0;
 
