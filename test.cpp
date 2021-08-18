@@ -36,7 +36,7 @@ int main()
     char *str = json_get(&uwo, "str").string;
     printf("value: %s\n", str);
 
-    parser.free();
+    json_memory_free(&parser.memory);
     free(input);
 
     return 0;
