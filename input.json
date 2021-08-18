@@ -1,6 +1,9 @@
 {
     "test": true,
     "owo": {
-        "uwu": "Hello, UwU!"
+        "uwu": "Hello, UwU!",
+        "uwo": {
+            "str": "test string"
+        }
     }
 }

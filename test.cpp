@@ -25,24 +25,19 @@ int main()
     printf("%s\n", input);
 
     JParser parser = json_init(input);
-    JObject json = json_parse(&parser, input);
-    JValue value = json_get(&json, "test1");
+    JValue json = json_parse(&parser, input);
 
-    printf("value: %d\n", value.boolean);
+    // C++
+    printf("value: %s\n", json["owo"]["uwo"]["str"].string);
 
-    // JsonParser parser(input);
-    // JObject json = parser.parse();
+    // C
+    JObject owo = json_get(&json.object, "owo").object;
+    JObject uwo = json_get(&owo, "uwo").object;
+    char *str = json_get(&uwo, "str").string;
+    printf("value: %s\n", str);
 
-    // printf("%d\n", (bool &&)json["test"]);
-    // printf("%d\n", json.boolean("test"));
-
-    // char *string = (char *&&)json["owo"]["deep"]["dark"]["dungeon"];
-    // printf("%s\n", string);
-
-    // printf("%s\n", json.obj("owo").str("uwu"));
-
-    // parser.free();
-    // free(input);
+    parser.free();
+    free(input);
 
     return 0;
 }

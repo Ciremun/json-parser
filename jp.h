@@ -16,6 +16,7 @@
 #define EXIT(code) exit(code)
 #endif // _WIN32
 
+#include <assert.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -66,6 +67,22 @@ typedef struct
     size_t pairs_count;
 } JObject;
 
+#ifdef __cplusplus
+struct JValue
+{
+    JType type;
+    union
+    {
+        JObject object;
+        int number;
+        int boolean;
+        char *string;
+        int null;
+    };
+
+    JValue operator[](const char *key);
+};
+#else
 typedef struct
 {
     JType type;
@@ -78,6 +95,7 @@ typedef struct
         int null;
     };
 } JValue;
+#endif // __cplusplus
 
 struct JPair
 {
@@ -114,11 +132,22 @@ void json_object_init(JObject *jobject, JPair *pairs);
 void json_object_add_pair(JObject *jobject, char *key, JValue *value);
 JValue json_get(JObject *jobject, const char *key);
 JParser json_init(const char *input);
-JObject json_parse(JParser *jparser, const char *input);
+JValue json_parse(JParser *jparser, const char *input);
 
 #endif // JP_H_
 
 #ifdef JP_IMPLEMENTATION
+
+#ifdef __cplusplus
+JValue JValue::operator[](const char *key)
+{
+    assert(type == JSON_OBJECT);
+    for (size_t i = 0; i < object.pairs_count; ++i)
+        if (strcmp(key, object.pairs[i].key) == 0)
+            return *(object.pairs[i].value);
+    JP_PANIC("key \"%s\" was not found", key);
+}
+#endif // #ifdef __cplusplus
 
 #ifndef _WIN32
 int GetPhysicallyInstalledSystemMemory(size_t *output)
@@ -229,7 +258,7 @@ JParser json_init(const char *input)
     return parser;
 }
 
-JObject json_parse(JParser *jparser, const char *input)
+JValue json_parse(JParser *jparser, const char *input)
 {
     JTokenKind current_token_kind = TOKEN_KIND_NONE;
     JState state = STATE_NONE;
@@ -239,8 +268,9 @@ JObject json_parse(JParser *jparser, const char *input)
 
     size_t pairs_offset = sizeof(JPair) * jparser->pairs_commited;
     JPair *pairs_start = (JPair *)(jparser->memory.base + pairs_offset);
-    JObject json;
-    json_object_init(&json, pairs_start);
+    JValue json;
+    json.type = JSON_OBJECT;
+    json_object_init(&json.object, pairs_start);
 
     for (size_t pos = 0; input[pos] != '\0'; ++pos)
     {
@@ -323,7 +353,7 @@ JObject json_parse(JParser *jparser, const char *input)
             if (current_token_kind == TOKEN_KIND_CLOSE_QUOTATION ||
                 current_token_kind == TOKEN_KIND_CLOSE_CURLY)
             {
-                json_object_add_pair(&json, current_key, current_value);
+                json_object_add_pair(&json.object, current_key, current_value);
                 current_token_kind = TOKEN_KIND_COMMA;
             }
             else
@@ -391,7 +421,7 @@ JObject json_parse(JParser *jparser, const char *input)
                 char *nested_object_string = (char *)json_memory_alloc(&jparser->memory, nested_object_string_size);
                 memcpy(nested_object_string, input + start_pos, nested_object_string_size - 1);
                 nested_object_string[nested_object_string_size - 1] = '\0';
-                JObject nested_object = json_parse(jparser, nested_object_string);
+                JObject nested_object = json_parse(jparser, nested_object_string).object;
                 current_value = (JValue *)json_memory_alloc(&jparser->memory, sizeof(JValue));
                 current_value->type = JSON_OBJECT;
                 current_value->object = nested_object;
@@ -409,7 +439,7 @@ JObject json_parse(JParser *jparser, const char *input)
             if (current_token_kind == TOKEN_KIND_CLOSE_QUOTATION ||
                 current_token_kind == TOKEN_KIND_CLOSE_CURLY)
             {
-                json_object_add_pair(&json, current_key, current_value);
+                json_object_add_pair(&json.object, current_key, current_value);
                 current_token_kind = TOKEN_KIND_CLOSE_CURLY;
             }
             else
