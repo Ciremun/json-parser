@@ -46,14 +46,14 @@ typedef enum
     TOKEN_KIND_CLOSE_QUOTATION,
     TOKEN_KIND_COLON,
     TOKEN_KIND_COMMA
-} TokenKind;
+} JTokenKind;
 
 typedef enum
 {
     STATE_NONE = 0,
     STATE_KEY,
     STATE_VALUE
-} State;
+} JState;
 
 typedef struct
 {
@@ -89,11 +89,11 @@ typedef struct
     size_t allocated;
     size_t commit_size;
 #endif // _WIN32
-} Memory;
+} JMemory;
 
 typedef struct
 {
-    Memory memory;
+    JMemory memory;
     size_t pairs_total;
     size_t pairs_commited;
 } JParser;
@@ -120,7 +120,7 @@ int GetPhysicallyInstalledSystemMemory(size_t *output)
 }
 #endif // _WIN32
 
-void json_memory_init(Memory *memory)
+void json_memory_init(JMemory *memory)
 {
     if (system_memory_size == 0)
     {
@@ -144,7 +144,7 @@ void json_memory_init(Memory *memory)
     memory->start = memory->base;
 }
 
-void *json_memory_alloc(Memory *memory, size_t size)
+void *json_memory_alloc(JMemory *memory, size_t size)
 {
 #ifdef _WIN32
     memory->allocated += size;
@@ -160,7 +160,7 @@ void *json_memory_alloc(Memory *memory, size_t size)
     return memory->start - size;
 }
 
-void json_memory_free(Memory *memory)
+void json_memory_free(JMemory *memory)
 {
 #ifdef _WIN32
     if (VirtualFree(memory->base, 0, MEM_RELEASE) == 0)
@@ -213,8 +213,8 @@ JParser json_init(const char *input)
 
 JObject json_parse(JParser *jparser, const char *input)
 {
-    TokenKind current_token_kind = TOKEN_KIND_NONE;
-    State state = STATE_NONE;
+    JTokenKind current_token_kind = TOKEN_KIND_NONE;
+    JState state = STATE_NONE;
 
     char *current_key = NULL;
     JValue *current_value = NULL;
