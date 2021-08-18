@@ -67,33 +67,27 @@ typedef struct
     size_t pairs_count;
 } JObject;
 
+#define JVALUEDEF       \
+    JType type;         \
+    union               \
+    {                   \
+        JObject object; \
+        int number;     \
+        int boolean;    \
+        char *string;   \
+        int null;       \
+    };
+
 #ifdef __cplusplus
 struct JValue
 {
-    JType type;
-    union
-    {
-        JObject object;
-        int number;
-        int boolean;
-        char *string;
-        int null;
-    };
-
+    JVALUEDEF
     JValue operator[](const char *key);
 };
 #else
 typedef struct
 {
-    JType type;
-    union
-    {
-        JObject object;
-        int number;
-        int boolean;
-        char *string;
-        int null;
-    };
+    JVALUEDEF
 } JValue;
 #endif // __cplusplus
 
