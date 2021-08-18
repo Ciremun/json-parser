@@ -26,7 +26,7 @@ int main()
 
     JParser parser = json_init(input);
     JObject json = json_parse(&parser, input);
-    JValue value = json_get(&json, "test");
+    JValue value = json_get(&json, "test1");
 
     printf("value: %d\n", value.boolean);
 

@@ -17,9 +17,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#if defined(NDEBUG)
-#define JP_PANIC(fmt, ...) exit(1)
-#elif (defined(__cplusplus)) || (!defined(__clang__) && defined(__GNUC__))
+#if (!defined(NDEBUG)) && ((defined(__cplusplus)) || (!defined(__clang__) && defined(__GNUC__)))
 #include <stdio.h>
 #define JP_PANIC(fmt, ...)                                                    \
     do                                                                        \
@@ -28,13 +26,7 @@
         exit(1);                                                              \
     } while (0)
 #else
-#include <stdio.h>
-#define JP_PANIC(msg, ...)                                                    \
-    do                                                                        \
-    {                                                                         \
-        printf("[ERRO] L%d: " msg "\n", __LINE__);                            \
-        exit(1);                                                              \
-    } while (0)
+#define JP_PANIC(fmt, ...) exit(1)
 #endif
 
 static size_t system_memory_size = 0;
