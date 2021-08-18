@@ -18,11 +18,11 @@
 #define JP_PANIC(fmt, ...) exit(1);
 #else
 #include <stdio.h>
-#define JP_PANIC(fmt, ...)                                                     \
-    do                                                                         \
-    {                                                                          \
-        printf("[ERRO] L%d: " fmt "\n", __LINE__ __VA_OPT__(, ) __VA_ARGS__);  \
-        exit(1);                                                               \
+#define JP_PANIC(fmt, ...)                                                    \
+    do                                                                        \
+    {                                                                         \
+        printf("[ERRO] L%d: " fmt "\n", __LINE__ __VA_OPT__(, ) __VA_ARGS__); \
+        exit(1);                                                              \
     } while (0)
 #endif
 
