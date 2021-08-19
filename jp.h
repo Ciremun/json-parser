@@ -387,6 +387,7 @@ JValue json_parse(JParser *jparser, const char *input)
             }
         }
         break;
+        // TODO: negative numbers
         case '0':
         case '1':
         case '2':
@@ -437,12 +438,16 @@ JValue json_parse(JParser *jparser, const char *input)
             {
                 size_t start_pos = pos;
                 size_t array_values_count = 0;
+                int inside_string = 0;
                 do
                 {
                     pos++;
                     if (input[pos] == '\0')
                         JP_PANIC("unexpected end of file at %zu", pos);
-                    if (input[pos] == ',')
+                    if (input[pos] == '"') {
+                        inside_string = !inside_string;
+                    }
+                    if (!inside_string && input[pos] == ',')
                     {
                         if (array_values_count == 0)
                         {
@@ -459,12 +464,12 @@ JValue json_parse(JParser *jparser, const char *input)
                     array_values_count = 1;
                 }
                 size_t i = pos - 1;
-                while (input[i--] == ' ')
-                    ;
+                while (input[i--] == ' ');
                 if (input[i + 1] == ',')
                 {
                     JP_PANIC("failed to parse array at %zu", i + 1);
                 }
+
                 JValue *array_values = (JValue *)json_memory_alloc(&jparser->memory, sizeof(JValue) * array_values_count);
 
                 start_pos++;

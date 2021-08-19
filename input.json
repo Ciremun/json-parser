@@ -1,9 +1,10 @@
 {
-    "test": [69, true, false, "string pog"],
+    "test": [69, true, false, "Hello, Array!", null],
     "owo": {
         "uwu": "Hello, UwU!",
         "uwo": {
-            "str": "test string"
+            "str": "test string",
+            "arr": ["Hello again, Array!"]
         }
     }
 }
