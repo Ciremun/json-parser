@@ -428,7 +428,7 @@ JValue json_parse(JParser *jparser, const char *input)
             }
         }
         break;
-        // TODO: nested arrays, object
+        // TODO(#3): nested arrays, object
         case '[':
         {
             switch (current_token_kind)
