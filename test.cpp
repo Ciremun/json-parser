@@ -1,4 +1,5 @@
 #define JP_IMPLEMENTATION
+#define JP_DEBUG
 #include "jp.h"
 
 #include <stdio.h>

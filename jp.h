@@ -20,13 +20,20 @@
 #include <stdint.h>
 #include <string.h>
 
-#if (!defined(NDEBUG)) && ((defined(__cplusplus)) || (!defined(__clang__) && defined(__GNUC__)))
+#if (!defined(NDEBUG)) && (defined(JP_DEBUG)) && ((defined(__cplusplus)) || (!defined(__clang__) && defined(__GNUC__)))
 #include <stdio.h>
 #define JP_PANIC(fmt, ...)                                                    \
     do                                                                        \
     {                                                                         \
         printf("[ERRO] L%d: " fmt "\n", __LINE__ __VA_OPT__(, ) __VA_ARGS__); \
         EXIT(1);                                                              \
+    } while (0)
+#elif !defined(NDEBUG)
+#define JP_PANIC(fmt, ...) \
+    do                     \
+    {                      \
+        assert(0 && fmt);  \
+        EXIT(1);           \
     } while (0)
 #else
 #define JP_PANIC(fmt, ...) EXIT(1)
@@ -381,11 +388,17 @@ JValue json_parse(JParser *jparser, const char *input)
                         {
                             i++;
                             if (input[i] == '\0')
+                            {
                                 JP_PANIC("unexpected end of file at %zu", i);
-                            else if (input[i] == '{')
+                            }
+                            if (input[i] == '{')
+                            {
                                 open_curly_count++;
+                            }
                             else if (input[i] == '}')
+                            {
                                 open_curly_count--;
+                            }
                         } while (open_curly_count != 1);
                         i++;
                     }
@@ -403,11 +416,17 @@ JValue json_parse(JParser *jparser, const char *input)
                 {
                     pos++;
                     if (input[pos] == '\0')
+                    {
                         JP_PANIC("unexpected end of file at %zu", pos);
-                    else if (input[pos] == '{')
+                    }
+                    if (input[pos] == '{')
+                    {
                         open_curly_count++;
+                    }
                     else if (input[pos] == '}')
+                    {
                         open_curly_count--;
+                    }
                 } while (open_curly_count != 0);
                 size_t nested_object_string_size = pos - start_pos + 2;
                 char *nested_object_string = (char *)json_memory_alloc(&jparser->memory, nested_object_string_size);
