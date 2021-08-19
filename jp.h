@@ -48,6 +48,8 @@ typedef enum
     JSON_OBJECT = 0,
     JSON_STRING,
     JSON_BOOL,
+    JSON_NULL,
+    JSON_NUMBER,
 } JType;
 
 typedef enum
@@ -134,6 +136,7 @@ void json_object_add_pair(JObject *jobject, char *key, JValue *value);
 JValue json_get(JObject *jobject, const char *key);
 JParser json_init(const char *input);
 JValue json_parse(JParser *jparser, const char *input);
+void string_to_number(const char* string, size_t *out);
 
 #endif // JP_H_
 
@@ -293,10 +296,10 @@ JValue json_parse(JParser *jparser, const char *input)
                     if (input[pos] == '\0')
                         JP_PANIC("unexpected end of file at %zu", pos);
                 } while (pos - start_pos != 4);
-                char *bool_value = (char *)json_memory_alloc(&jparser->memory, 5);
-                memcpy(bool_value, input + start_pos, 4);
-                bool_value[4] = '\0';
-                if (strcmp(bool_value, "true") == 0)
+                char *bool_string = (char *)json_memory_alloc(&jparser->memory, 5);
+                memcpy(bool_string, input + start_pos, 4);
+                bool_string[4] = '\0';
+                if (strcmp(bool_string, "true") == 0)
                 {
                     current_value = (JValue *)json_memory_alloc(&jparser->memory, sizeof(JValue));
                     current_value->type = JSON_BOOL;
@@ -307,6 +310,115 @@ JValue json_parse(JParser *jparser, const char *input)
                     break;
                 }
                 JP_PANIC("failed to parse 'true'");
+            }
+            break;
+            default:
+                goto process_char;
+            }
+        }
+        break;
+        case 'f':
+        {
+            switch (current_token_kind)
+            {
+            case TOKEN_KIND_COLON:
+            {
+                size_t start_pos = pos;
+                do
+                {
+                    pos++;
+                    if (input[pos] == '\0')
+                        JP_PANIC("unexpected end of file at %zu", pos);
+                } while (pos - start_pos != 5);
+                char *bool_string = (char *)json_memory_alloc(&jparser->memory, 6);
+                memcpy(bool_string, input + start_pos, 5);
+                bool_string[5] = '\0';
+                if (strcmp(bool_string, "false") == 0)
+                {
+                    current_value = (JValue *)json_memory_alloc(&jparser->memory, sizeof(JValue));
+                    current_value->type = JSON_BOOL;
+                    current_value->boolean = 0;
+                    current_token_kind = TOKEN_KIND_CLOSE_QUOTATION;
+                    state = STATE_NONE;
+                    pos--;
+                    break;
+                }
+                JP_PANIC("failed to parse 'false'");
+            }
+            break;
+            default:
+                goto process_char;
+            }
+        }
+        break;
+        case 'n':
+        {
+            switch (current_token_kind)
+            {
+            case TOKEN_KIND_COLON:
+            {
+                size_t start_pos = pos;
+                do
+                {
+                    pos++;
+                    if (input[pos] == '\0')
+                        JP_PANIC("unexpected end of file at %zu", pos);
+                } while (pos - start_pos != 4);
+                char *null_string = (char *)json_memory_alloc(&jparser->memory, 5);
+                memcpy(null_string, input + start_pos, 4);
+                null_string[4] = '\0';
+                if (strcmp(null_string, "null") == 0)
+                {
+                    current_value = (JValue *)json_memory_alloc(&jparser->memory, sizeof(JValue));
+                    current_value->type = JSON_NULL;
+                    current_value->null = 0;
+                    current_token_kind = TOKEN_KIND_CLOSE_QUOTATION;
+                    state = STATE_NONE;
+                    pos--;
+                    break;
+                }
+                JP_PANIC("failed to parse 'null'");
+            }
+            break;
+            default:
+                goto process_char;
+            }
+        }
+        break;
+        case '0':
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+        {
+            switch (current_token_kind)
+            {
+            case TOKEN_KIND_COLON:
+            {
+                size_t start_pos = pos;
+                do
+                {
+                    pos++;
+                    if (input[pos] == '\0')
+                        JP_PANIC("unexpected end of file at %zu", pos);
+                } while (input[pos] != ',' && input[pos] != '}');
+                size_t number_string_size = pos - start_pos + 1;
+                char *number_string = (char *)json_memory_alloc(&jparser->memory, number_string_size);
+                memcpy(number_string, input + start_pos, number_string_size - 1);
+                number_string[number_string_size] = '\0';
+                size_t number = 0;
+                string_to_number(number_string, &number);
+                current_value = (JValue *)json_memory_alloc(&jparser->memory, sizeof(JValue));
+                current_value->type = JSON_NUMBER;
+                current_value->number = number;
+                current_token_kind = TOKEN_KIND_CLOSE_QUOTATION;
+                state = STATE_NONE;
+                pos--;
             }
             break;
             default:
@@ -514,6 +626,17 @@ JValue json_parse(JParser *jparser, const char *input)
         }
     }
     return json;
+}
+
+void string_to_number(const char* string, size_t *out)
+{
+    size_t position = 0;
+    size_t string_length = strlen(string);
+    while (position < string_length) {
+        size_t digit = string[position] - 48;
+        *out = *out * 10 + digit;
+        position++;
+    }
 }
 
 #endif // JP_IMPLEMENTATION
