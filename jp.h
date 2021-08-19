@@ -94,6 +94,8 @@ struct JValue
 {
     JVALUEDEF
     JValue operator[](const char *key);
+    JValue operator[](size_t idx);
+    JValue operator[](int idx);
 };
 #else
 typedef struct
@@ -152,6 +154,15 @@ JValue JValue::operator[](const char *key)
         if (strcmp(key, object.pairs[i].key) == 0)
             return *(object.pairs[i].value);
     JP_PANIC("key \"%s\" was not found", key);
+}
+JValue JValue::operator[](size_t idx)
+{
+    assert(type == JSON_ARRAY);
+    return array[idx];
+}
+JValue JValue::operator[](int idx)
+{
+    return operator[](static_cast<size_t>(idx));
 }
 #endif // #ifdef __cplusplus
 

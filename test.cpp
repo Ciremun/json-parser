@@ -30,21 +30,24 @@ int main()
 
     // C++
     printf("array:\n");
-    printf("  number: %lld\n", json["test"].array[0].number);
-    printf("  true: %d\n", json["test"].array[1].boolean);
-    printf("  false: %d\n", json["test"].array[2].boolean);
-    printf("  string: %s\n", json["test"].array[3].string);
-    printf("  null: %d\n", json["test"].array[4].null);
+    printf("  number: %lld\n", json["test"][0].number);
+    printf("  true: %d\n", json["test"][1].boolean);
+    printf("  false: %d\n", json["test"][2].boolean);
+    printf("  string: %s\n", json["test"][3].string);
+    printf("  null: %d\n", json["test"][4].null);
 
-    printf("nested:\n");
-    printf("  value: %s\n", json["owo"]["uwo"]["str"].string);
-    printf("  array string: %s\n", json["owo"]["uwo"]["arr"].array[0].string);
+    printf("nested:\n  C++:\n");
+    printf("    string: %s\n", json["owo"]["uwo"]["str"].string);
+    printf("    array string: %s\n", json["owo"]["uwo"]["arr"][0].string);
 
     // C
     JObject owo = json_get(&json.object, "owo").object;
     JObject uwo = json_get(&owo, "uwo").object;
     char *str = json_get(&uwo, "str").string;
-    printf("  value: %s\n", str);
+    JValue *arr = json_get(&uwo, "arr").array;
+    printf("  C:\n");
+    printf("    string: %s\n", str);
+    printf("    array string: %s\n", arr[0].string);
 
     json_memory_free(&parser.memory);
     free(input);
