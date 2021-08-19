@@ -29,7 +29,10 @@ int main()
     JValue json = json_parse(&parser, input);
 
     // C++
-    printf("number: %d\n", json["test"].number);
+    printf("number: %d\n", json["test"].array[0].number);
+    printf("true: %d\n", json["test"].array[1].boolean);
+    printf("false: %d\n", json["test"].array[2].boolean);
+    printf("string: %s\n", json["test"].array[3].string);
     printf("value: %s\n", json["owo"]["uwo"]["str"].string);
 
     // C
