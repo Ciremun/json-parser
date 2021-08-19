@@ -42,6 +42,7 @@
 static size_t system_memory_size = 0;
 
 typedef struct JPair JPair;
+typedef struct JValue JValue;
 
 typedef enum
 {
@@ -98,10 +99,10 @@ struct JValue
     JValue operator[](int idx);
 };
 #else
-typedef struct
+struct JValue
 {
     JVALUEDEF
-} JValue;
+};
 #endif // __cplusplus
 
 struct JPair
