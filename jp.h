@@ -387,7 +387,7 @@ JValue json_parse(JParser *jparser, const char *input)
             }
         }
         break;
-        // TODO: negative numbers
+        // TODO(#4): negative numbers
         case '0':
         case '1':
         case '2':
