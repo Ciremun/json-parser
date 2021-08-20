@@ -400,7 +400,6 @@ JValue json_parse(JParser *jparser, const char *input)
             }
         }
         break;
-        // TODO(#4): negative numbers
         case '-':
         case '0':
         case '1':
