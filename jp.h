@@ -310,6 +310,7 @@ JValue json_parse(JParser *jparser, const char *input)
                     if (input[pos] == '\0')
                         JP_PANIC("unexpected end of file at %zu", pos);
                 } while (pos - start_pos != 4);
+                // TODO(#5): free unused strings
                 char *bool_string = (char *)json_memory_alloc(&jparser->memory, 5);
                 memcpy(bool_string, input + start_pos, 4);
                 bool_string[4] = '\0';
