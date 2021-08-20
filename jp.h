@@ -453,7 +453,7 @@ JValue json_parse(JParser *jparser, const char *input)
             }
         }
         break;
-        // TODO: cleanup
+        // TODO(#6): cleanup
         // TODO(#3): nested arrays, object
         case '[':
         {
