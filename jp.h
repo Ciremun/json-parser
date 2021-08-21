@@ -9,10 +9,10 @@
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif // _GNU_SOURCE
-#include <stdlib.h>
-#include <stdio.h>
-#include <sys/mman.h>
 #include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/mman.h>
 #define EXIT(code) exit(code)
 #endif // _WIN32
 
@@ -20,20 +20,21 @@
 #include <stdint.h>
 #include <string.h>
 
-#if (!defined(NDEBUG)) && (defined(JP_DEBUG)) && ((defined(__cplusplus)) || (!defined(__clang__) && defined(__GNUC__)))
+#if (!defined(NDEBUG)) && (defined(JP_DEBUG)) &&                               \
+    ((defined(__cplusplus)) || (!defined(__clang__) && defined(__GNUC__)))
 #include <stdio.h>
-#define JP_PANIC(fmt, ...)                                                    \
-    do                                                                        \
-    {                                                                         \
-        printf("[ERRO] L%d: " fmt "\n", __LINE__ __VA_OPT__(, ) __VA_ARGS__); \
-        EXIT(1);                                                              \
+#define JP_PANIC(fmt, ...)                                                     \
+    do                                                                         \
+    {                                                                          \
+        printf("[ERRO] L%d: " fmt "\n", __LINE__ __VA_OPT__(, ) __VA_ARGS__);  \
+        EXIT(1);                                                               \
     } while (0)
 #elif !defined(NDEBUG)
-#define JP_PANIC(fmt, ...) \
-    do                     \
-    {                      \
-        assert(0 && fmt);  \
-        EXIT(1);           \
+#define JP_PANIC(fmt, ...)                                                     \
+    do                                                                         \
+    {                                                                          \
+        assert(0 && fmt);                                                      \
+        EXIT(1);                                                               \
     } while (0)
 #else
 #define JP_PANIC(fmt, ...) EXIT(1)
@@ -78,16 +79,16 @@ typedef struct
     size_t pairs_count;
 } JObject;
 
-#define JVALUEDEF         \
-    JType type;           \
-    union                 \
-    {                     \
-        JObject object;   \
-        long long number; \
-        int boolean;      \
-        char *string;     \
-        int null;         \
-        JValue *array;    \
+#define JVALUEDEF                                                              \
+    JType type;                                                                \
+    union                                                                      \
+    {                                                                          \
+        JObject object;                                                        \
+        long long number;                                                      \
+        int boolean;                                                           \
+        char *string;                                                          \
+        int null;                                                              \
+        JValue *array;                                                         \
     };
 
 #ifdef __cplusplus
@@ -135,7 +136,8 @@ int GetPhysicallyInstalledSystemMemory(size_t *output);
 
 void json_memory_init(JMemory *memory);
 void *json_memory_alloc(JMemory *memory, size_t size);
-char *json_memory_alloc_value_string(JMemory *memory, const void *start, size_t value_size);
+char *json_memory_alloc_value_string(JMemory *memory, const void *start,
+                                     size_t value_size);
 void json_memory_free(JMemory *memory);
 void json_object_init(JObject *jobject, JPair *pairs);
 void json_object_add_pair(JObject *jobject, char *key, JValue *value);
@@ -195,7 +197,9 @@ void json_memory_init(JMemory *memory)
     if (system_memory_size == 0)
     {
         if (!GetPhysicallyInstalledSystemMemory(&system_memory_size))
-            system_memory_size = INTPTR_MAX == INT32_MAX ? 4294967295ULL : 16ULL * 1024 * 1024 * 1024;
+            system_memory_size = INTPTR_MAX == INT32_MAX
+                                     ? 4294967295ULL
+                                     : 16ULL * 1024 * 1024 * 1024;
         else
             system_memory_size *= 1024;
     }
@@ -203,11 +207,13 @@ void json_memory_init(JMemory *memory)
     memory->commited = 0;
     memory->allocated = 0;
     memory->commit_size = 1024;
-    memory->base = (char *)(VirtualAlloc(NULL, system_memory_size, MEM_RESERVE, PAGE_READWRITE));
+    memory->base = (char *)(VirtualAlloc(NULL, system_memory_size, MEM_RESERVE,
+                                         PAGE_READWRITE));
     if (memory->base == NULL)
         JP_PANIC("VirtualAlloc failed: %lu", GetLastError());
 #else
-    memory->base = (char *)(mmap(0, system_memory_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+    memory->base = (char *)(mmap(0, system_memory_size, PROT_READ | PROT_WRITE,
+                                 MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
     if (memory->base == MAP_FAILED)
         JP_PANIC("mmap failed: %s", strerror(errno));
 #endif // _WIN32
@@ -221,7 +227,8 @@ void *json_memory_alloc(JMemory *memory, size_t size)
     if (memory->allocated * 2 > memory->commited)
     {
         memory->commit_size += size * 2;
-        if (VirtualAlloc(memory->start, memory->commit_size, MEM_COMMIT, PAGE_READWRITE) == NULL)
+        if (VirtualAlloc(memory->start, memory->commit_size, MEM_COMMIT,
+                         PAGE_READWRITE) == NULL)
             JP_PANIC("VirtualAlloc failed: %lu", GetLastError());
         memory->commited += memory->commit_size;
     }
@@ -291,9 +298,7 @@ JValue json_parse(JParser *jparser, const char *input)
 
     for (size_t pos = 0; input[pos] != '\0'; ++pos)
     {
-        if (input[pos] == ' ' ||
-            input[pos] == '\t' ||
-            input[pos] == '\n' ||
+        if (input[pos] == ' ' || input[pos] == '\t' || input[pos] == '\n' ||
             input[pos] == '\r')
             continue;
         switch (input[pos])
@@ -312,10 +317,12 @@ JValue json_parse(JParser *jparser, const char *input)
                         JP_PANIC("unexpected end of file at %zu", pos);
                 } while (pos - start_pos != 4);
                 // TODO(#5): free unused strings
-                char *bool_string = json_memory_alloc_value_string(&jparser->memory, input + start_pos, 5);
+                char *bool_string = json_memory_alloc_value_string(
+                    &jparser->memory, input + start_pos, 5);
                 if (strcmp(bool_string, "true") == 0)
                 {
-                    current_value = (JValue *)json_memory_alloc(&jparser->memory, sizeof(JValue));
+                    current_value = (JValue *)json_memory_alloc(
+                        &jparser->memory, sizeof(JValue));
                     current_value->type = JSON_BOOL;
                     current_value->boolean = 1;
                     current_token_kind = TOKEN_KIND_CLOSE_QUOTATION;
@@ -344,10 +351,12 @@ JValue json_parse(JParser *jparser, const char *input)
                     if (input[pos] == '\0')
                         JP_PANIC("unexpected end of file at %zu", pos);
                 } while (pos - start_pos != 5);
-                char *bool_string = json_memory_alloc_value_string(&jparser->memory, input + start_pos, 6);
+                char *bool_string = json_memory_alloc_value_string(
+                    &jparser->memory, input + start_pos, 6);
                 if (strcmp(bool_string, "false") == 0)
                 {
-                    current_value = (JValue *)json_memory_alloc(&jparser->memory, sizeof(JValue));
+                    current_value = (JValue *)json_memory_alloc(
+                        &jparser->memory, sizeof(JValue));
                     current_value->type = JSON_BOOL;
                     current_value->boolean = 0;
                     current_token_kind = TOKEN_KIND_CLOSE_QUOTATION;
@@ -376,10 +385,12 @@ JValue json_parse(JParser *jparser, const char *input)
                     if (input[pos] == '\0')
                         JP_PANIC("unexpected end of file at %zu", pos);
                 } while (pos - start_pos != 4);
-                char *null_string = json_memory_alloc_value_string(&jparser->memory, input + start_pos, 5);
+                char *null_string = json_memory_alloc_value_string(
+                    &jparser->memory, input + start_pos, 5);
                 if (strcmp(null_string, "null") == 0)
                 {
-                    current_value = (JValue *)json_memory_alloc(&jparser->memory, sizeof(JValue));
+                    current_value = (JValue *)json_memory_alloc(
+                        &jparser->memory, sizeof(JValue));
                     current_value->type = JSON_NULL;
                     current_value->null = 0;
                     current_token_kind = TOKEN_KIND_CLOSE_QUOTATION;
@@ -411,12 +422,9 @@ JValue json_parse(JParser *jparser, const char *input)
             {
             case TOKEN_KIND_COLON:
             {
-                int negative = 0;
-                if (input[pos] == '-')
-                {
-                    negative = 1;
+                int negative = input[pos] == '-';
+                if (negative)
                     pos++;
-                }
                 size_t start_pos = pos;
                 do
                 {
@@ -425,14 +433,14 @@ JValue json_parse(JParser *jparser, const char *input)
                         JP_PANIC("unexpected end of file at %zu", pos);
                 } while (input[pos] != ',' && input[pos] != '}');
                 size_t number_string_size = pos - start_pos + 1;
-                char *number_string = json_memory_alloc_value_string(&jparser->memory, input + start_pos, number_string_size);
+                char *number_string = json_memory_alloc_value_string(
+                    &jparser->memory, input + start_pos, number_string_size);
                 size_t number = 0;
                 string_to_number(number_string, &number);
                 if (negative)
-                {
                     number = -(long long)number;
-                }
-                current_value = (JValue *)json_memory_alloc(&jparser->memory, sizeof(JValue));
+                current_value = (JValue *)json_memory_alloc(&jparser->memory,
+                                                            sizeof(JValue));
                 current_value->type = JSON_NUMBER;
                 current_value->number = number;
                 current_token_kind = TOKEN_KIND_CLOSE_QUOTATION;
@@ -462,34 +470,25 @@ JValue json_parse(JParser *jparser, const char *input)
                     if (input[pos] == '\0')
                         JP_PANIC("unexpected end of file at %zu", pos);
                     if (input[pos] == '"')
-                    {
                         inside_string = !inside_string;
-                    }
                     if (!inside_string && input[pos] == ',')
                     {
                         if (array_values_count == 0)
-                        {
                             array_values_count = 2;
-                        }
                         else
-                        {
                             array_values_count++;
-                        }
                     }
                 } while (input[pos] != ']');
                 if (array_values_count == 0 && pos - start_pos != 1)
-                {
                     array_values_count = 1;
-                }
                 size_t i = pos - 1;
-                while (input[i--] == ' ')
-                    ;
+                while (input[i] == ' ')
+                    i--;
                 if (input[i + 1] == ',')
-                {
                     JP_PANIC("failed to parse array at %zu", i + 1);
-                }
 
-                JValue *array_values = (JValue *)json_memory_alloc(&jparser->memory, sizeof(JValue) * array_values_count);
+                JValue *array_values = (JValue *)json_memory_alloc(
+                    &jparser->memory, sizeof(JValue) * array_values_count);
 
                 start_pos++;
                 for (size_t j = 0; j < array_values_count; ++j)
@@ -503,12 +502,13 @@ JValue json_parse(JParser *jparser, const char *input)
                         {
                             start_pos++;
                             if (input[start_pos] == '\0')
-                            {
-                                JP_PANIC("unexpected end of file at %zu", start_pos);
-                            }
-                        } while (input[start_pos] != '"' && input[start_pos - 1] != '\\');
+                                JP_PANIC("unexpected end of file at %zu",
+                                         start_pos);
+                        } while (input[start_pos] != '"' &&
+                                 input[start_pos - 1] != '\\');
                         size_t value_size = start_pos - i + 1;
-                        char *value_string = json_memory_alloc_value_string(&jparser->memory, input + i, value_size);
+                        char *value_string = json_memory_alloc_value_string(
+                            &jparser->memory, input + i, value_size);
                         array_values[j].type = JSON_STRING;
                         array_values[j].string = value_string;
                         if (array_values_count > 1)
@@ -516,7 +516,8 @@ JValue json_parse(JParser *jparser, const char *input)
                             do
                             {
                                 start_pos++;
-                            } while (input[start_pos] == ',' || input[start_pos] == ' ');
+                            } while (input[start_pos] == ',' ||
+                                     input[start_pos] == ' ');
                         }
                     }
                     break;
@@ -532,27 +533,25 @@ JValue json_parse(JParser *jparser, const char *input)
                     case '8':
                     case '9':
                     {
-                        int negative = 0;
-                        if (input[start_pos] == '-')
-                        {
-                            negative = 1;
+                        int negative = input[start_pos] == '-';
+                        if (negative)
                             start_pos++;
-                        }
                         size_t i = start_pos;
                         do
                         {
                             start_pos++;
                             if (input[start_pos] == '\0')
-                                JP_PANIC("unexpected end of file at %zu", start_pos);
-                        } while (input[start_pos] != ',' && input[start_pos] != ']');
+                                JP_PANIC("unexpected end of file at %zu",
+                                         start_pos);
+                        } while (input[start_pos] != ',' &&
+                                 input[start_pos] != ']');
                         size_t number_string_size = start_pos - i + 1;
-                        char *number_string = json_memory_alloc_value_string(&jparser->memory, input + i, number_string_size);
+                        char *number_string = json_memory_alloc_value_string(
+                            &jparser->memory, input + i, number_string_size);
                         size_t number = 0;
                         string_to_number(number_string, &number);
                         if (negative)
-                        {
                             number = -(long long)number;
-                        }
                         array_values[j].type = JSON_NUMBER;
                         array_values[j].number = number;
                         if (array_values_count > 1)
@@ -560,7 +559,8 @@ JValue json_parse(JParser *jparser, const char *input)
                             do
                             {
                                 start_pos++;
-                            } while (input[start_pos] == ',' || input[start_pos] == ' ');
+                            } while (input[start_pos] == ',' ||
+                                     input[start_pos] == ' ');
                         }
                     }
                     break;
@@ -571,11 +571,11 @@ JValue json_parse(JParser *jparser, const char *input)
                         {
                             start_pos++;
                             if (input[start_pos] == '\0')
-                            {
-                                JP_PANIC("unexpected end of file at %zu", start_pos);
-                            }
+                                JP_PANIC("unexpected end of file at %zu",
+                                         start_pos);
                         } while (start_pos - i != 4);
-                        char *bool_string = json_memory_alloc_value_string(&jparser->memory, input + i, 5);
+                        char *bool_string = json_memory_alloc_value_string(
+                            &jparser->memory, input + i, 5);
                         if (strcmp(bool_string, "true") == 0)
                         {
                             array_values[j].type = JSON_BOOL;
@@ -585,7 +585,8 @@ JValue json_parse(JParser *jparser, const char *input)
                                 do
                                 {
                                     start_pos++;
-                                } while (input[start_pos] == ',' || input[start_pos] == ' ');
+                                } while (input[start_pos] == ',' ||
+                                         input[start_pos] == ' ');
                             }
                             break;
                         }
@@ -599,11 +600,11 @@ JValue json_parse(JParser *jparser, const char *input)
                         {
                             start_pos++;
                             if (input[start_pos] == '\0')
-                            {
-                                JP_PANIC("unexpected end of file at %zu", start_pos);
-                            }
+                                JP_PANIC("unexpected end of file at %zu",
+                                         start_pos);
                         } while (start_pos - i != 5);
-                        char *bool_string = json_memory_alloc_value_string(&jparser->memory, input + i, 6);
+                        char *bool_string = json_memory_alloc_value_string(
+                            &jparser->memory, input + i, 6);
                         if (strcmp(bool_string, "false") == 0)
                         {
                             array_values[j].type = JSON_BOOL;
@@ -613,7 +614,8 @@ JValue json_parse(JParser *jparser, const char *input)
                                 do
                                 {
                                     start_pos++;
-                                } while (input[start_pos] == ',' || input[start_pos] == ' ');
+                                } while (input[start_pos] == ',' ||
+                                         input[start_pos] == ' ');
                             }
                             break;
                         }
@@ -627,11 +629,11 @@ JValue json_parse(JParser *jparser, const char *input)
                         {
                             start_pos++;
                             if (input[start_pos] == '\0')
-                            {
-                                JP_PANIC("unexpected end of file at %zu", start_pos);
-                            }
+                                JP_PANIC("unexpected end of file at %zu",
+                                         start_pos);
                         } while (start_pos - i != 4);
-                        char *null_string = json_memory_alloc_value_string(&jparser->memory, input + i, 5);
+                        char *null_string = json_memory_alloc_value_string(
+                            &jparser->memory, input + i, 5);
                         if (strcmp(null_string, "null") == 0)
                         {
                             array_values[j].type = JSON_NULL;
@@ -641,7 +643,8 @@ JValue json_parse(JParser *jparser, const char *input)
                                 do
                                 {
                                     start_pos++;
-                                } while (input[start_pos] == ',' || input[start_pos] == ' ');
+                                } while (input[start_pos] == ',' ||
+                                         input[start_pos] == ' ');
                             }
                             break;
                         }
@@ -652,8 +655,8 @@ JValue json_parse(JParser *jparser, const char *input)
                         JP_PANIC("unknown char: '%c'", input[start_pos]);
                     }
                 }
-
-                current_value = (JValue *)json_memory_alloc(&jparser->memory, sizeof(JValue));
+                current_value = (JValue *)json_memory_alloc(&jparser->memory,
+                                                            sizeof(JValue));
                 current_value->type = JSON_ARRAY;
                 current_value->array = array_values;
                 current_token_kind = TOKEN_KIND_CLOSE_QUOTATION;
@@ -692,7 +695,8 @@ JValue json_parse(JParser *jparser, const char *input)
             break;
             default:
             {
-                JP_PANIC("unreachable, unknown token kind: %d", current_token_kind);
+                JP_PANIC("unreachable, unknown token kind: %d",
+                         current_token_kind);
             }
             break;
             }
@@ -739,21 +743,16 @@ JValue json_parse(JParser *jparser, const char *input)
                         {
                             i++;
                             if (input[i] == '\0')
-                            {
                                 JP_PANIC("unexpected end of file at %zu", i);
-                            }
                             if (input[i] == '{')
-                            {
                                 open_curly_count++;
-                            }
-                            else if (input[i] == '}')
-                            {
+                            if (input[i] == '}')
                                 open_curly_count--;
-                            }
                         } while (open_curly_count != 1);
                         i++;
                     }
-                    else if (input[i] == ':' && input[i - 1] == '"' && input[i - 2] != '\\')
+                    else if (input[i] == ':' && input[i - 1] == '"' &&
+                             input[i - 2] != '\\')
                         jparser->pairs_commited++;
                 } while (input[i] != '}');
                 current_token_kind = TOKEN_KIND_OPEN_CURLY;
@@ -767,22 +766,20 @@ JValue json_parse(JParser *jparser, const char *input)
                 {
                     pos++;
                     if (input[pos] == '\0')
-                    {
                         JP_PANIC("unexpected end of file at %zu", pos);
-                    }
                     if (input[pos] == '{')
-                    {
                         open_curly_count++;
-                    }
-                    else if (input[pos] == '}')
-                    {
+                    if (input[pos] == '}')
                         open_curly_count--;
-                    }
                 } while (open_curly_count != 0);
                 size_t nested_object_string_size = pos - start_pos + 2;
-                char *nested_object_string = json_memory_alloc_value_string(&jparser->memory, input + start_pos, nested_object_string_size);
-                JObject nested_object = json_parse(jparser, nested_object_string).object;
-                current_value = (JValue *)json_memory_alloc(&jparser->memory, sizeof(JValue));
+                char *nested_object_string = json_memory_alloc_value_string(
+                    &jparser->memory, input + start_pos,
+                    nested_object_string_size);
+                JObject nested_object =
+                    json_parse(jparser, nested_object_string).object;
+                current_value = (JValue *)json_memory_alloc(&jparser->memory,
+                                                            sizeof(JValue));
                 current_value->type = JSON_OBJECT;
                 current_value->object = nested_object;
                 current_token_kind = TOKEN_KIND_CLOSE_CURLY;
@@ -825,7 +822,8 @@ JValue json_parse(JParser *jparser, const char *input)
                             JP_PANIC("unexpected end of file at %zu", pos);
                     } while (input[pos] != '"' && input[pos - 1] != '\\');
                     size_t key_size = pos - start_pos + 1;
-                    current_key = json_memory_alloc_value_string(&jparser->memory, input + start_pos, key_size);
+                    current_key = json_memory_alloc_value_string(
+                        &jparser->memory, input + start_pos, key_size);
                     current_token_kind = TOKEN_KIND_CLOSE_QUOTATION;
                     state = STATE_NONE;
                 }
@@ -839,8 +837,10 @@ JValue json_parse(JParser *jparser, const char *input)
                             JP_PANIC("unexpected end of file at %zu", pos);
                     } while (input[pos] != '"' && input[pos - 1] != '\\');
                     size_t value_size = pos - start_pos + 1;
-                    char *value_string = json_memory_alloc_value_string(&jparser->memory, input + start_pos, value_size);
-                    current_value = (JValue *)json_memory_alloc(&jparser->memory, sizeof(JValue));
+                    char *value_string = json_memory_alloc_value_string(
+                        &jparser->memory, input + start_pos, value_size);
+                    current_value = (JValue *)json_memory_alloc(
+                        &jparser->memory, sizeof(JValue));
                     current_value->type = JSON_STRING;
                     current_value->string = value_string;
                     current_token_kind = TOKEN_KIND_CLOSE_QUOTATION;
@@ -873,7 +873,8 @@ void string_to_number(const char *string, size_t *out)
     }
 }
 
-char *json_memory_alloc_value_string(JMemory *memory, const void *start, size_t value_size)
+char *json_memory_alloc_value_string(JMemory *memory, const void *start,
+                                     size_t value_size)
 {
     char *value_string = (char *)json_memory_alloc(memory, value_size);
     memcpy(value_string, start, value_size - 1);
