@@ -46,9 +46,11 @@ int main()
     JObject uwo = json_get(&owo, "uwo").object;
     char *str = json_get(&uwo, "str").string;
     JValue *arr = json_get(&uwo, "arr").array;
+    JValue *test = json_get(&json.object, "test").array;
     printf("  C:\n");
     printf("    string: %s\n", str);
     printf("    array string: %s\n", arr[0].string);
+    printf("    negative number: %lld\n", test[0].number);
 
     json_memory_free(&parser.memory);
     free(input);
