@@ -430,7 +430,7 @@ JValue json_parse(JParser *jparser, const char *input)
                 string_to_number(number_string, &number);
                 if (negative)
                 {
-                    number = -number;
+                    number = -(long long)number;
                 }
                 current_value = (JValue *)json_memory_alloc(&jparser->memory, sizeof(JValue));
                 current_value->type = JSON_NUMBER;
@@ -551,7 +551,7 @@ JValue json_parse(JParser *jparser, const char *input)
                         string_to_number(number_string, &number);
                         if (negative)
                         {
-                            number = -number;
+                            number = -(long long)number;
                         }
                         array_values[j].type = JSON_NUMBER;
                         array_values[j].number = number;
