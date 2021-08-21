@@ -174,8 +174,7 @@ JValue JValue::operator[](int idx)
 int GetPhysicallyInstalledSystemMemory(size_t *output)
 {
     FILE *meminfo = fopen("/proc/meminfo", "r");
-    if (meminfo == NULL)
-        JP_PANIC("Error opening file '/proc/meminfo'");
+    if (meminfo == NULL) JP_PANIC("Error opening file '/proc/meminfo'");
 
     char line[256];
     while (fgets(line, sizeof(line), meminfo))
@@ -423,8 +422,7 @@ JValue json_parse(JParser *jparser, const char *input)
             case TOKEN_KIND_COLON:
             {
                 int negative = input[pos] == '-';
-                if (negative)
-                    pos++;
+                if (negative) pos++;
                 size_t start_pos = pos;
                 do
                 {
@@ -437,8 +435,7 @@ JValue json_parse(JParser *jparser, const char *input)
                     &jparser->memory, input + start_pos, number_string_size);
                 size_t number = 0;
                 string_to_number(number_string, &number);
-                if (negative)
-                    number = -(long long)number;
+                if (negative) number = -(long long)number;
                 current_value = (JValue *)json_memory_alloc(&jparser->memory,
                                                             sizeof(JValue));
                 current_value->type = JSON_NUMBER;
@@ -469,8 +466,7 @@ JValue json_parse(JParser *jparser, const char *input)
                     pos++;
                     if (input[pos] == '\0')
                         JP_PANIC("unexpected end of file at %zu", pos);
-                    if (input[pos] == '"')
-                        inside_string = !inside_string;
+                    if (input[pos] == '"') inside_string = !inside_string;
                     if (!inside_string && input[pos] == ',')
                     {
                         if (array_values_count == 0)
@@ -534,8 +530,7 @@ JValue json_parse(JParser *jparser, const char *input)
                     case '9':
                     {
                         int negative = input[start_pos] == '-';
-                        if (negative)
-                            start_pos++;
+                        if (negative) start_pos++;
                         size_t i = start_pos;
                         do
                         {
@@ -550,8 +545,7 @@ JValue json_parse(JParser *jparser, const char *input)
                             &jparser->memory, input + i, number_string_size);
                         size_t number = 0;
                         string_to_number(number_string, &number);
-                        if (negative)
-                            number = -(long long)number;
+                        if (negative) number = -(long long)number;
                         array_values[j].type = JSON_NUMBER;
                         array_values[j].number = number;
                         if (array_values_count > 1)
@@ -744,10 +738,8 @@ JValue json_parse(JParser *jparser, const char *input)
                             i++;
                             if (input[i] == '\0')
                                 JP_PANIC("unexpected end of file at %zu", i);
-                            if (input[i] == '{')
-                                open_curly_count++;
-                            if (input[i] == '}')
-                                open_curly_count--;
+                            if (input[i] == '{') open_curly_count++;
+                            if (input[i] == '}') open_curly_count--;
                         } while (open_curly_count != 1);
                         i++;
                     }
@@ -767,10 +759,8 @@ JValue json_parse(JParser *jparser, const char *input)
                     pos++;
                     if (input[pos] == '\0')
                         JP_PANIC("unexpected end of file at %zu", pos);
-                    if (input[pos] == '{')
-                        open_curly_count++;
-                    if (input[pos] == '}')
-                        open_curly_count--;
+                    if (input[pos] == '{') open_curly_count++;
+                    if (input[pos] == '}') open_curly_count--;
                 } while (open_curly_count != 0);
                 size_t nested_object_string_size = pos - start_pos + 2;
                 char *nested_object_string = json_memory_alloc_value_string(
