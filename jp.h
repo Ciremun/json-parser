@@ -120,8 +120,6 @@ void json_skip_whitespaces(const char *input, size_t *pos);
 void json_memory_init(JMemory *memory);
 void json_memory_free(JMemory *memory);
 void *json_memory_alloc(JMemory *memory, size_t size);
-char *json_memory_alloc_value_string(JMemory *memory, const void *start,
-                                     size_t value_size);
 void json_object_init(JObject *object, JPair *pairs);
 void json_object_add_pair(JObject *object, char *key, JValue *value);
 JParser json_init(const char *input);
@@ -134,7 +132,7 @@ JValue *json_parse_number(JParser *parser, const char *input, size_t *pos,
                           int negative);
 JValue *json_parse_boolean(JParser *parser, const char *input, size_t *pos,
                            int bool_value, const char *bool_string,
-                           size_t bool_string_size);
+                           size_t bool_string_length);
 JValue *json_parse_null(JParser *parser, const char *input, size_t *pos);
 JValue *json_parse_array(JParser *parser, const char *input, size_t *pos);
 
@@ -265,15 +263,6 @@ void json_memory_free(JMemory *memory)
 #endif // _WIN32
 }
 
-char *json_memory_alloc_value_string(JMemory *memory, const void *start,
-                                     size_t value_size)
-{
-    char *value_string = (char *)json_memory_alloc(memory, value_size);
-    memcpy(value_string, start, value_size - 1);
-    value_string[value_size - 1] = '\0';
-    return value_string;
-}
-
 void json_object_init(JObject *object, JPair *pairs)
 {
     object->pairs = pairs;
@@ -324,8 +313,9 @@ JValue *json_parse_string(JParser *parser, const char *input, size_t *pos)
     if (*pos - start != 0)
     {
         size_t string_size = *pos - start + 1;
-        value_string = json_memory_alloc_value_string(
-            &parser->memory, input + start, string_size);
+        value_string = (char *)json_memory_alloc(&parser->memory, string_size);
+        memcpy(value_string, input + start, string_size - 1);
+        value_string[string_size - 1] = '\0';
     }
     JValue *value =
         (JValue *)json_memory_alloc(&parser->memory, sizeof(JValue));
@@ -364,17 +354,15 @@ JValue *json_parse_number(JParser *parser, const char *input, size_t *pos,
 
 JValue *json_parse_boolean(JParser *parser, const char *input, size_t *pos,
                            int bool_value, const char *bool_string,
-                           size_t bool_string_size)
+                           size_t bool_string_length)
 {
-    char *value_string = json_memory_alloc_value_string(
-        &parser->memory, input + *pos, bool_string_size);
-    if (strcmp(bool_string, value_string) == 0)
+    if (memcmp(input + *pos, bool_string, bool_string_length) == 0)
     {
         JValue *value =
             (JValue *)json_memory_alloc(&parser->memory, sizeof(JValue));
         value->type = JSON_BOOL;
         value->boolean = bool_value;
-        *pos += bool_string_size - 1;
+        *pos += bool_string_length;
         return value;
     }
     JP_PANIC("failed to parse %s", bool_string);
@@ -382,9 +370,7 @@ JValue *json_parse_boolean(JParser *parser, const char *input, size_t *pos,
 
 JValue *json_parse_null(JParser *parser, const char *input, size_t *pos)
 {
-    char *value_string =
-        json_memory_alloc_value_string(&parser->memory, input + *pos, 5);
-    if (strcmp("null", value_string) == 0)
+    if (memcmp(input + *pos, "null", 4) == 0)
     {
         JValue *value =
             (JValue *)json_memory_alloc(&parser->memory, sizeof(JValue));
@@ -456,11 +442,9 @@ JValue *json_parse_value(JParser *parser, const char *input, size_t *pos)
     case '9':
         return json_parse_number(parser, input, pos, 0);
     case 't':
-        return json_parse_boolean(parser, input, pos, 1, "true",
-                                  sizeof("true"));
+        return json_parse_boolean(parser, input, pos, 1, "true", 4);
     case 'f':
-        return json_parse_boolean(parser, input, pos, 0, "false",
-                                  sizeof("false"));
+        return json_parse_boolean(parser, input, pos, 0, "false", 5);
     case 'n':
         return json_parse_null(parser, input, pos);
     default:
