@@ -123,7 +123,7 @@ typedef struct
 int GetPhysicallyInstalledSystemMemory(size_t *output);
 #endif // _WIN32
 
-// TODO: json_ prefix for utility functions
+// TODO(#11): json_ prefix for utility functions
 void skip_whitespace(const char *input, size_t *pos);
 int match_char(char c, const char *input, size_t *pos);
 int whitespace_char(char c);
