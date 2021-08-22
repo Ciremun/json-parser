@@ -273,7 +273,6 @@ void *json_memory_alloc(JMemory *memory, size_t size)
         memory->commited += memory->commit_size;
     }
 #endif // _WIN32
-    // printf("allocate from %p to %p\n", memory->start, memory->start + size);
     memory->start += size;
     return memory->start - size;
 }
