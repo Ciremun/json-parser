@@ -20,7 +20,7 @@
 #include <stdint.h>
 #include <string.h>
 
-// TODO: empty strings
+// TODO(#8): empty strings
 // TODO: do not allocate value strings, just use memcmp
 // TODO: error reporting
 #if (!defined(NDEBUG)) && (defined(JP_DEBUG)) &&                               \
