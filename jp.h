@@ -43,7 +43,9 @@
 #define JP_PANIC(fmt, ...) EXIT(1)
 #endif // JP_PANIC
 
-#define UNEXPECTED_EOF(chr, pos) if (chr == '\0') JP_PANIC("unexpected end of file at %zu", pos)
+#define UNEXPECTED_EOF(chr, pos)                                               \
+    if (chr == '\0')                                                           \
+    JP_PANIC("unexpected end of file at %zu", pos)
 
 static size_t system_memory_size = 0;
 
