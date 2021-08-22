@@ -1,11 +1,10 @@
 {
-    "hi": 1234567890,
+    "aya": 123,
     "test": [-69, true, false, "Hello, Array!", null],
     "owo": {
-        "uwu": "Hello, UwU!",
         "uwo": {
-            "str": "test",
-            "arr": ["Hello again, Array!"]
+            "str": "str string",
+            "arr": ["first string"]
         }
     }
 }
