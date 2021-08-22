@@ -335,10 +335,15 @@ JValue *json_parse_string(JParser *parser, const char *input, size_t *pos)
     size_t start = *pos;
     while (input[*pos] != '"' && input[*pos - 1] != '\\')
         UNEXPECTED_EOF(input[(*pos)++], *pos - 1);
-    assert(*pos - start != 0);
-    size_t string_size = *pos - start + 1;
-    char *value_string = json_memory_alloc_value_string(
-        &parser->memory, input + start, string_size);
+    char *value_string;
+    if (*pos - start != 0)
+    {
+        size_t string_size = *pos - start + 1;
+        value_string = json_memory_alloc_value_string(
+            &parser->memory, input + start, string_size);
+    }
+    else
+        value_string = 0;
     JValue *value =
         (JValue *)json_memory_alloc(&parser->memory, sizeof(JValue));
     value->type = JSON_STRING;

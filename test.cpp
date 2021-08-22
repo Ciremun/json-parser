@@ -29,6 +29,7 @@ int main()
     JValue json = json_parse(&parser, input);
 
     // C++
+    printf("empty string: %s\n", json["empty"].string);
     printf("positive number: %lld\n", json["aya"].number);
     printf("array:\n");
     printf("  negative number: %lld\n", json["test"][0].number);
