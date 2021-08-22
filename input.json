@@ -1,6 +1,6 @@
 {
     "aya": 123,
-    "test": [-69, true, false, "Hello, Array!", null],
+    "test": [-69, true, false, "Hello, Array!", null, [69]],
     "owo": {
         "uwo": {
             "str": "str string",

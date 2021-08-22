@@ -36,6 +36,7 @@ int main()
     printf("  false: %d\n", json["test"][2].boolean);
     printf("  string: %s\n", json["test"][3].string);
     printf("  null: %d\n", json["test"][4].null);
+    printf("  array number: %lld\n", json["test"][5][0].number);
 
     printf("nested:\n  C++:\n");
     printf("    string: %s\n", json["owo"]["uwo"]["str"].string);
