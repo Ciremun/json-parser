@@ -20,7 +20,6 @@
 #include <stdint.h>
 #include <string.h>
 
-// TODO(#8): empty strings
 // TODO(#9): do not allocate value strings, just use memcmp
 // TODO(#10): error reporting
 #if (!defined(NDEBUG)) && (defined(JP_DEBUG)) &&                               \
@@ -115,11 +114,10 @@ typedef struct
 int GetPhysicallyInstalledSystemMemory(size_t *output);
 #endif // _WIN32
 
-// TODO(#11): json_ prefix for utility functions
-void skip_whitespace(const char *input, size_t *pos);
-int match_char(char c, const char *input, size_t *pos);
-int whitespace_char(char c);
-void string_to_number(const char *string, size_t *out);
+int json_whitespace_char(char c);
+int json_match_char(char c, const char *input, size_t *pos);
+void json_skip_whitespaces(const char *input, size_t *pos);
+void json_string_to_number(const char *string, size_t *out);
 void json_memory_init(JMemory *memory);
 void json_memory_free(JMemory *memory);
 void *json_memory_alloc(JMemory *memory, size_t size);
@@ -187,19 +185,19 @@ int GetPhysicallyInstalledSystemMemory(size_t *output)
 }
 #endif // _WIN32
 
-void skip_whitespace(const char *input, size_t *pos)
+void json_skip_whitespaces(const char *input, size_t *pos)
 {
-    while (whitespace_char(input[*pos]))
+    while (json_whitespace_char(input[*pos]))
         (*pos)++;
     UNEXPECTED_EOF(input[*pos], *pos);
 }
 
-int match_char(char c, const char *input, size_t *pos)
+int json_match_char(char c, const char *input, size_t *pos)
 {
     do
     {
         UNEXPECTED_EOF(input[*pos], *pos);
-    } while (whitespace_char(input[(*pos)++]));
+    } while (json_whitespace_char(input[(*pos)++]));
     int match = input[*pos - 1] == c;
     if (!match)
         JP_PANIC("expected '%c' found '%c' at %zu", c, input[*pos - 1],
@@ -207,12 +205,12 @@ int match_char(char c, const char *input, size_t *pos)
     return match;
 }
 
-int whitespace_char(char c)
+int json_whitespace_char(char c)
 {
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 }
 
-void string_to_number(const char *string, size_t *out)
+void json_string_to_number(const char *string, size_t *out)
 {
     size_t position = 0;
     size_t string_length = strlen(string);
@@ -356,14 +354,14 @@ JValue *json_parse_number(JParser *parser, const char *input, size_t *pos,
     if (negative)
         (*pos)++;
     size_t start_pos = *pos;
-    while (!whitespace_char(input[*pos]) && input[*pos] != ',' &&
+    while (!json_whitespace_char(input[*pos]) && input[*pos] != ',' &&
            input[*pos] != '}' && input[*pos] != ']')
         UNEXPECTED_EOF(input[(*pos)++], *pos - 1);
     size_t number_string_size = *pos - start_pos + 1;
     char *number_string = json_memory_alloc_value_string(
         &parser->memory, input + start_pos, number_string_size);
     size_t number = 0;
-    string_to_number(number_string, &number);
+    json_string_to_number(number_string, &number);
     if (negative)
         number = -(long long)number;
     JValue *value =
@@ -410,7 +408,7 @@ JValue *json_parse_null(JParser *parser, const char *input, size_t *pos)
 JValue *json_parse_array(JParser *parser, const char *input, size_t *pos)
 {
     (*pos)++;
-    skip_whitespace(input, pos);
+    json_skip_whitespaces(input, pos);
     JValue *value =
         (JValue *)json_memory_alloc(&parser->memory, sizeof(JValue));
     value->type = JSON_ARRAY;
@@ -437,7 +435,7 @@ JValue *json_parse_array(JParser *parser, const char *input, size_t *pos)
     {
         array_values[i] = *json_parse_value(parser, input, pos);
         (*pos)++;
-        skip_whitespace(input, pos);
+        json_skip_whitespaces(input, pos);
     }
     value->array = array_values;
     return value;
@@ -481,7 +479,7 @@ JValue *json_parse_value(JParser *parser, const char *input, size_t *pos)
 
 JValue *json_parse_object(JParser *parser, const char *input, size_t *pos)
 {
-    match_char('{', input, pos);
+    json_match_char('{', input, pos);
 
     JPair *pairs_start =
         (JPair *)(parser->memory.base + sizeof(JPair) * parser->pairs_commited);
@@ -515,17 +513,17 @@ JValue *json_parse_object(JParser *parser, const char *input, size_t *pos)
 
 parse_pair:
 
-    match_char('"', input, pos);
+    json_match_char('"', input, pos);
     (*pos)--;
     char *key = json_parse_string(parser, input, pos)->string;
 
-    match_char(':', input, pos);
-    skip_whitespace(input, pos);
+    json_match_char(':', input, pos);
+    json_skip_whitespaces(input, pos);
 
     JValue *value = json_parse_value(parser, input, pos);
 
     json_object_add_pair(&object->object, key, value);
-    skip_whitespace(input, pos);
+    json_skip_whitespaces(input, pos);
 
     if (input[*pos] == ',')
     {
@@ -533,7 +531,7 @@ parse_pair:
         goto parse_pair;
     }
 
-    match_char('}', input, pos);
+    json_match_char('}', input, pos);
     return object;
 }
 
