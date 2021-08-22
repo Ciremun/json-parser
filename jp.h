@@ -117,7 +117,6 @@ int GetPhysicallyInstalledSystemMemory(size_t *output);
 int json_whitespace_char(char c);
 int json_match_char(char c, const char *input, size_t *pos);
 void json_skip_whitespaces(const char *input, size_t *pos);
-void json_string_to_number(const char *string, size_t *out);
 void json_memory_init(JMemory *memory);
 void json_memory_free(JMemory *memory);
 void *json_memory_alloc(JMemory *memory, size_t size);
@@ -208,18 +207,6 @@ int json_match_char(char c, const char *input, size_t *pos)
 int json_whitespace_char(char c)
 {
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
-}
-
-void json_string_to_number(const char *string, size_t *out)
-{
-    size_t position = 0;
-    size_t string_length = strlen(string);
-    while (position < string_length)
-    {
-        size_t digit = string[position] - 48;
-        *out = *out * 10 + digit;
-        position++;
-    }
 }
 
 void json_memory_init(JMemory *memory)
@@ -357,11 +344,15 @@ JValue *json_parse_number(JParser *parser, const char *input, size_t *pos,
     while (!json_whitespace_char(input[*pos]) && input[*pos] != ',' &&
            input[*pos] != '}' && input[*pos] != ']')
         UNEXPECTED_EOF(input[(*pos)++], *pos - 1);
-    size_t number_string_size = *pos - start_pos + 1;
-    char *number_string = json_memory_alloc_value_string(
-        &parser->memory, input + start_pos, number_string_size);
+    size_t number_string_length = *pos - start_pos;
     size_t number = 0;
-    json_string_to_number(number_string, &number);
+    size_t i = 0;
+    while (i < number_string_length)
+    {
+        size_t digit = (input + start_pos)[i] - 48;
+        number = number * 10 + digit;
+        i++;
+    }
     if (negative)
         number = -(long long)number;
     JValue *value =
