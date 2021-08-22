@@ -22,7 +22,7 @@
 
 // TODO(#8): empty strings
 // TODO(#9): do not allocate value strings, just use memcmp
-// TODO: error reporting
+// TODO(#10): error reporting
 #if (!defined(NDEBUG)) && (defined(JP_DEBUG)) &&                               \
     ((defined(__cplusplus)) || (!defined(__clang__) && defined(__GNUC__)))
 #include <stdio.h>
