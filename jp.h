@@ -68,32 +68,24 @@ typedef struct
     size_t pairs_count;
 } JObject;
 
-#define JVALUEDEF                                                              \
-    JType type;                                                                \
-    union                                                                      \
-    {                                                                          \
-        JObject object;                                                        \
-        long long number;                                                      \
-        int boolean;                                                           \
-        char *string;                                                          \
-        int null;                                                              \
-        JValue *array;                                                         \
-    };
-
-#ifdef __cplusplus
 struct JValue
 {
-    JVALUEDEF
+    JType type;
+    union
+    {
+        JObject object;
+        long long number;
+        int boolean;
+        char *string;
+        int null;
+        JValue *array;
+    };
+#ifdef __cplusplus
     JValue operator[](const char *key);
     JValue operator[](size_t idx);
     JValue operator[](int idx);
-};
-#else
-struct JValue
-{
-    JVALUEDEF
-};
 #endif // __cplusplus
+};
 
 struct JPair
 {
@@ -171,7 +163,7 @@ JValue JValue::operator[](int idx)
 {
     return operator[](static_cast<size_t>(idx));
 }
-#endif // #ifdef __cplusplus
+#endif // __cplusplus
 
 #ifndef _WIN32
 int GetPhysicallyInstalledSystemMemory(size_t *output)
