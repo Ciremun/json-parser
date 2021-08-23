@@ -45,10 +45,6 @@
 
 #if !defined(NDEBUG)
 #define ERROR_MESSAGE_SIZE 1024
-#define ERROR_MESSAGE_PTR(memory)                                              \
-    (char *)json_memory_alloc(memory, ERROR_MESSAGE_SIZE)
-#else
-#define ERROR_MESSAGE_PTR(memory) 0
 #endif // NDEBUG
 
 static size_t system_memory_size = 0;
@@ -77,9 +73,11 @@ typedef enum
 typedef struct
 {
     JCode code;
+#if !defined(NDEBUG)
     size_t pos;
     const char *key;
     char *message;
+#endif // NDEBUG
 } JError;
 
 typedef struct
@@ -97,7 +95,9 @@ typedef struct
 {
     JPair *pairs;
     size_t pairs_count;
+#if !defined(NDEBUG)
     JMemory *memory;
+#endif // NDEBUG
 } JObject;
 
 struct JValue
@@ -171,12 +171,14 @@ JValue JValue::operator[](const char *key)
     for (size_t i = 0; i < object.pairs_count; ++i)
         if (strcmp(key, object.pairs[i].key) == 0)
             return *(object.pairs[i].value);
-    JValue *value = (JValue *)json_memory_alloc(object.memory, sizeof(JValue));
-    value->type = JSON_ERROR;
-    value->error.code = JSON_KEY_NOT_FOUND;
-    value->error.key = key;
-    value->error.message = ERROR_MESSAGE_PTR(object.memory);
-    return *value;
+    JValue value;
+    value.type = JSON_ERROR;
+    value.error.code = JSON_KEY_NOT_FOUND;
+#if !defined(NDEBUG)
+    value.error.key = key;
+    value.error.message = (char *)json_memory_alloc(object.memory, ERROR_MESSAGE_SIZE);
+#endif // NDEBUG
+    return value;
 }
 JValue JValue::operator[](size_t idx)
 {
@@ -315,7 +317,11 @@ void json_object_init(JObject *object, JPair *pairs, JMemory *memory)
 {
     object->pairs = pairs;
     object->pairs_count = 0;
+#if !defined(NDEBUG)
     object->memory = memory;
+#else
+    (void)memory;
+#endif // NDEBUG
 }
 
 void json_object_add_pair(JObject *object, char *key, JValue *value)
@@ -330,12 +336,14 @@ JValue json_get(JObject *object, const char *key)
     for (size_t i = 0; i < object->pairs_count; ++i)
         if (strcmp(key, object->pairs[i].key) == 0)
             return *(object->pairs[i].value);
-    JValue *value = (JValue *)json_memory_alloc(object->memory, sizeof(JValue));
-    value->type = JSON_ERROR;
-    value->error.code = JSON_KEY_NOT_FOUND;
-    value->error.key = key;
-    value->error.message = ERROR_MESSAGE_PTR(object->memory);
-    return *value;
+    JValue value;
+    value.type = JSON_ERROR;
+    value.error.code = JSON_KEY_NOT_FOUND;
+#if !defined(NDEBUG)
+    value.error.key = key;
+    value.error.message = (char *)json_memory_alloc(object->memory, ERROR_MESSAGE_SIZE);
+#endif // NDEBUG
+    return value;
 }
 
 JParser json_init(const char *input)
