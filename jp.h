@@ -21,7 +21,6 @@
 #include <string.h>
 
 // TODO(#12): customizable allocator
-// TODO(#9): do not allocate value strings, just use memcmp
 // TODO(#10): error reporting
 #if (!defined(NDEBUG)) && (defined(JP_DEBUG)) &&                               \
     ((defined(__cplusplus)) || (!defined(__clang__) && defined(__GNUC__)))
@@ -33,12 +32,7 @@
         EXIT(1);                                                               \
     } while (0)
 #elif !defined(NDEBUG)
-#define JP_PANIC(fmt, ...)                                                     \
-    do                                                                         \
-    {                                                                          \
-        assert(0 && fmt);                                                      \
-        EXIT(1);                                                               \
-    } while (0)
+#define JP_PANIC(fmt, ...) assert(0 && fmt)
 #else
 #define JP_PANIC(fmt, ...) EXIT(1)
 #endif // JP_PANIC
