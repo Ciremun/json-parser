@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <string.h>
 
+// TODO(#12): customizable allocator
 // TODO(#9): do not allocate value strings, just use memcmp
 // TODO(#10): error reporting
 #if (!defined(NDEBUG)) && (defined(JP_DEBUG)) &&                               \
