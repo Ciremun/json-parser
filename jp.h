@@ -4,6 +4,9 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#if !defined(NDEBUG)
+#include <stdio.h>
+#endif // NDEBUG
 #define EXIT(code) ExitProcess(code)
 #else
 #ifndef _GNU_SOURCE
@@ -24,7 +27,6 @@
 // TODO(#10): error reporting
 #if (!defined(NDEBUG)) && (defined(JP_DEBUG)) &&                               \
     ((defined(__cplusplus)) || (!defined(__clang__) && defined(__GNUC__)))
-#include <stdio.h>
 #define JP_PANIC(fmt, ...)                                                     \
     do                                                                         \
     {                                                                          \
@@ -41,10 +43,25 @@
     if (chr == '\0')                                                           \
     JP_PANIC("unexpected end of file at %zu", pos)
 
+#if !defined(NDEBUG)
+#define ERROR_MESSAGE_SIZE 1024
+#define ERROR_MESSAGE_PTR(memory)                                              \
+    (char *)json_memory_alloc(memory, ERROR_MESSAGE_SIZE)
+#else
+#define ERROR_MESSAGE_PTR(memory) 0
+#endif // NDEBUG
+
 static size_t system_memory_size = 0;
 
 typedef struct JPair JPair;
 typedef struct JValue JValue;
+
+typedef enum
+{
+    JSON_KEY_NOT_FOUND = 0,
+    JSON_UNEXPECTED_EOF,
+    JSON_PARSE_ERROR,
+} JCode;
 
 typedef enum
 {
@@ -54,12 +71,33 @@ typedef enum
     JSON_NULL,
     JSON_NUMBER,
     JSON_ARRAY,
+    JSON_ERROR,
 } JType;
+
+typedef struct
+{
+    JCode code;
+    size_t pos;
+    const char *key;
+    char *message;
+} JError;
+
+typedef struct
+{
+    char *start;
+    char *base;
+#ifdef _WIN32
+    size_t commited;
+    size_t allocated;
+    size_t commit_size;
+#endif // _WIN32
+} JMemory;
 
 typedef struct
 {
     JPair *pairs;
     size_t pairs_count;
+    JMemory *memory;
 } JObject;
 
 struct JValue
@@ -67,11 +105,12 @@ struct JValue
     JType type;
     union
     {
-        JObject object;
         long long number;
         int boolean;
-        char *string;
         int null;
+        char *string;
+        JError error;
+        JObject object;
         JValue *array;
     };
 #ifdef __cplusplus
@@ -89,17 +128,6 @@ struct JPair
 
 typedef struct
 {
-    char *start;
-    char *base;
-#ifdef _WIN32
-    size_t commited;
-    size_t allocated;
-    size_t commit_size;
-#endif // _WIN32
-} JMemory;
-
-typedef struct
-{
     JMemory memory;
     size_t pairs_total;
     size_t pairs_commited;
@@ -111,11 +139,12 @@ int GetPhysicallyInstalledSystemMemory(size_t *output);
 
 int json_whitespace_char(char c);
 int json_match_char(char c, const char *input, size_t *pos);
+char *json_get_error(JError *error);
 void json_skip_whitespaces(const char *input, size_t *pos);
 void json_memory_init(JMemory *memory);
 void json_memory_free(JMemory *memory);
 void *json_memory_alloc(JMemory *memory, size_t size);
-void json_object_init(JObject *object, JPair *pairs);
+void json_object_init(JObject *object, JPair *pairs, JMemory *memory);
 void json_object_add_pair(JObject *object, char *key, JValue *value);
 JParser json_init(const char *input);
 JValue json_get(JObject *object, const char *key);
@@ -142,7 +171,12 @@ JValue JValue::operator[](const char *key)
     for (size_t i = 0; i < object.pairs_count; ++i)
         if (strcmp(key, object.pairs[i].key) == 0)
             return *(object.pairs[i].value);
-    JP_PANIC("key \"%s\" was not found", key);
+    JValue *value = (JValue *)json_memory_alloc(object.memory, sizeof(JValue));
+    value->type = JSON_ERROR;
+    value->error.code = JSON_KEY_NOT_FOUND;
+    value->error.key = key;
+    value->error.message = ERROR_MESSAGE_PTR(object.memory);
+    return *value;
 }
 JValue JValue::operator[](size_t idx)
 {
@@ -195,6 +229,25 @@ int json_match_char(char c, const char *input, size_t *pos)
         JP_PANIC("expected '%c' found '%c' at %zu", c, input[*pos - 1],
                  *pos - 1);
     return match;
+}
+
+char *json_get_error(JError *error)
+{
+#if !defined(NDEBUG)
+    switch (error->code)
+    {
+    case JSON_KEY_NOT_FOUND:
+    {
+        sprintf(error->message, "key \"%s\" was not found", error->key);
+        return error->message;
+    }
+    break;
+    default:
+        JP_PANIC("unreachable, unknown error code: %d\n", error->code);
+    }
+#endif // NDEBUG
+    (void)error;
+    return 0;
 }
 
 int json_whitespace_char(char c)
@@ -258,10 +311,11 @@ void json_memory_free(JMemory *memory)
 #endif // _WIN32
 }
 
-void json_object_init(JObject *object, JPair *pairs)
+void json_object_init(JObject *object, JPair *pairs, JMemory *memory)
 {
     object->pairs = pairs;
     object->pairs_count = 0;
+    object->memory = memory;
 }
 
 void json_object_add_pair(JObject *object, char *key, JValue *value)
@@ -276,7 +330,12 @@ JValue json_get(JObject *object, const char *key)
     for (size_t i = 0; i < object->pairs_count; ++i)
         if (strcmp(key, object->pairs[i].key) == 0)
             return *(object->pairs[i].value);
-    JP_PANIC("key \"%s\" was not found", key);
+    JValue *value = (JValue *)json_memory_alloc(object->memory, sizeof(JValue));
+    value->type = JSON_ERROR;
+    value->error.code = JSON_KEY_NOT_FOUND;
+    value->error.key = key;
+    value->error.message = ERROR_MESSAGE_PTR(object->memory);
+    return *value;
 }
 
 JParser json_init(const char *input)
@@ -456,7 +515,7 @@ JValue *json_parse_object(JParser *parser, const char *input, size_t *pos)
     JValue *object =
         (JValue *)json_memory_alloc(&parser->memory, sizeof(JValue));
     object->type = JSON_OBJECT;
-    json_object_init(&object->object, pairs_start);
+    json_object_init(&object->object, pairs_start, &parser->memory);
 
     size_t i = *pos;
     do

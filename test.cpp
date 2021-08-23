@@ -44,6 +44,9 @@ int main()
     printf("    array string: %s\n", json["owo"]["uwo"]["arr"][0].string);
 
     // C
+    JValue value = json_get(&json.object, "error");
+    if (value.type == JSON_ERROR)
+        printf("error: %s\n", json_get_error(&value.error));
     JObject owo = json_get(&json.object, "owo").object;
     JObject uwo = json_get(&owo, "uwo").object;
     char *str = json_get(&uwo, "str").string;
