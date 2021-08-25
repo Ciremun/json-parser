@@ -27,12 +27,16 @@
 // TODO(#14): tests
 // TODO(#12): customizable allocator
 // TODO(#10): error reporting
+#if !defined(NDEBUG)
+#define ERROR_MESSAGE_SIZE 1024
+#endif // NDEBUG
+
 #if (!defined(NDEBUG)) && (defined(JP_DEBUG)) &&                               \
     ((defined(__cplusplus)) || (!defined(__clang__) && defined(__GNUC__)))
 #define JP_PANIC(fmt, ...)                                                     \
     do                                                                         \
     {                                                                          \
-        printf("[ERRO] L%d: " fmt "\n", __LINE__ __VA_OPT__(, ) __VA_ARGS__);  \
+        printf("[ERRO] jp.h:%d: " fmt "\n", __LINE__ __VA_OPT__(, ) __VA_ARGS__);  \
         EXIT(1);                                                               \
     } while (0)
 #elif !defined(NDEBUG)
@@ -41,14 +45,6 @@
 #define JP_PANIC(fmt, ...) EXIT(1)
 #endif // JP_PANIC
 
-#define UNEXPECTED_EOF(chr, pos)                                               \
-    if (chr == '\0')                                                           \
-    JP_PANIC("unexpected end of file at %zu", pos)
-
-#if !defined(NDEBUG)
-#define ERROR_MESSAGE_SIZE 1024
-#endif // NDEBUG
-
 static size_t system_memory_size = 0;
 
 typedef struct JPair JPair;
@@ -56,9 +52,10 @@ typedef struct JValue JValue;
 
 typedef enum
 {
-    JSON_KEY_NOT_FOUND = 0,
+    JSON_KEY_NOT_FOUND = 10,
     JSON_UNEXPECTED_EOF,
     JSON_PARSE_ERROR,
+    JSON_TYPE_ERROR,
 } JCode;
 
 typedef enum
@@ -75,11 +72,7 @@ typedef enum
 typedef struct
 {
     JCode code;
-#if !defined(NDEBUG)
-    size_t pos;
-    const char *key;
     char *message;
-#endif // NDEBUG
 } JError;
 
 typedef struct
@@ -141,8 +134,7 @@ int GetPhysicallyInstalledSystemMemory(size_t *output);
 
 int json_whitespace_char(char c);
 int json_match_char(char c, const char *input, size_t *pos);
-char *json_get_error(JError *error);
-void json_skip_whitespaces(const char *input, size_t *pos);
+int json_skip_whitespaces(const char *input, size_t *pos);
 void json_memory_init(JMemory *memory);
 void json_memory_free(JMemory *memory);
 void *json_memory_alloc(JMemory *memory, size_t size);
@@ -154,7 +146,8 @@ JValue json_parse(JParser *parser, const char *input);
 JValue json_parse_object(JParser *parser, const char *input, size_t *pos);
 JValue json_parse_value(JParser *parser, const char *input, size_t *pos);
 JValue json_parse_string(JParser *parser, const char *input, size_t *pos);
-JValue json_parse_number(const char *input, size_t *pos, int negative);
+JValue json_parse_number(JMemory *memory, const char *input, size_t *pos,
+                         int negative);
 JValue json_parse_boolean(const char *input, size_t *pos, int bool_value,
                           const char *bool_string, size_t bool_string_length);
 JValue json_parse_null(const char *input, size_t *pos);
@@ -167,7 +160,8 @@ JValue json_parse_array(JParser *parser, const char *input, size_t *pos);
 #ifdef __cplusplus
 JValue JValue::operator[](const char *key)
 {
-    assert(type == JSON_OBJECT);
+    if (type != JSON_OBJECT)
+        JP_PANIC("value is not an object at '%s'", key);
     for (size_t i = 0; i < object.pairs_count; ++i)
         if (strcmp(key, object.pairs[i].key) == 0)
             return object.pairs[i].value;
@@ -175,15 +169,18 @@ JValue JValue::operator[](const char *key)
     value.type = JSON_ERROR;
     value.error.code = JSON_KEY_NOT_FOUND;
 #if !defined(NDEBUG)
-    value.error.key = key;
     value.error.message =
         (char *)json_memory_alloc(object.memory, ERROR_MESSAGE_SIZE);
+    sprintf(value.error.message, "key \"%s\" was not found", key);
+#else
+    value.error.message = 0;
 #endif // NDEBUG
     return value;
 }
 JValue JValue::operator[](size_t idx)
 {
-    assert(type == JSON_ARRAY);
+    if (type != JSON_ARRAY)
+        JP_PANIC("value is not an array at %zu", idx);
     return array[idx];
 }
 JValue JValue::operator[](int idx)
@@ -196,8 +193,11 @@ JValue JValue::operator[](int idx)
 int GetPhysicallyInstalledSystemMemory(size_t *output)
 {
     FILE *meminfo = fopen("/proc/meminfo", "r");
-    if (meminfo == NULL)
-        JP_PANIC("Error opening file '/proc/meminfo'");
+    if (meminfo == 0)
+    {
+        fprintf(stderr, "Error opening file '/proc/meminfo'");
+        return 0;
+    }
 
     char line[256];
     while (fgets(line, sizeof(line), meminfo))
@@ -214,43 +214,26 @@ int GetPhysicallyInstalledSystemMemory(size_t *output)
 }
 #endif // _WIN32
 
-void json_skip_whitespaces(const char *input, size_t *pos)
+int json_skip_whitespaces(const char *input, size_t *pos)
 {
     while (json_whitespace_char(input[*pos]))
         (*pos)++;
-    UNEXPECTED_EOF(input[*pos], *pos);
+    if (input[*pos] == '\0')
+        return 0;
+    return 1;
 }
 
 int json_match_char(char c, const char *input, size_t *pos)
 {
     do
     {
-        UNEXPECTED_EOF(input[*pos], *pos);
+        if (input[*pos] == '\0')
+            return JSON_UNEXPECTED_EOF;
     } while (json_whitespace_char(input[(*pos)++]));
     int match = input[*pos - 1] == c;
     if (!match)
-        JP_PANIC("expected '%c' found '%c' at %zu", c, input[*pos - 1],
-                 *pos - 1);
+        return JSON_PARSE_ERROR;
     return match;
-}
-
-char *json_get_error(JError *error)
-{
-#if !defined(NDEBUG)
-    switch (error->code)
-    {
-    case JSON_KEY_NOT_FOUND:
-    {
-        sprintf(error->message, "key \"%s\" was not found", error->key);
-        return error->message;
-    }
-    break;
-    default:
-        JP_PANIC("unreachable, unknown error code: %d\n", error->code);
-    }
-#endif // NDEBUG
-    (void)error;
-    return 0;
 }
 
 int json_whitespace_char(char c)
@@ -273,9 +256,9 @@ void json_memory_init(JMemory *memory)
     memory->commited = 0;
     memory->allocated = 0;
     memory->commit_size = 1024;
-    memory->base = (char *)(VirtualAlloc(NULL, system_memory_size, MEM_RESERVE,
+    memory->base = (char *)(VirtualAlloc(0, system_memory_size, MEM_RESERVE,
                                          PAGE_READWRITE));
-    if (memory->base == NULL)
+    if (memory->base == 0)
         JP_PANIC("VirtualAlloc failed: %lu", GetLastError());
 #else
     memory->base = (char *)(mmap(0, system_memory_size, PROT_READ | PROT_WRITE,
@@ -294,7 +277,7 @@ void *json_memory_alloc(JMemory *memory, size_t size)
     {
         memory->commit_size += size * 2;
         if (VirtualAlloc(memory->start, memory->commit_size, MEM_COMMIT,
-                         PAGE_READWRITE) == NULL)
+                         PAGE_READWRITE) == 0)
             JP_PANIC("VirtualAlloc failed: %lu", GetLastError());
         memory->commited += memory->commit_size;
     }
@@ -341,9 +324,11 @@ JValue json_get(JObject *object, const char *key)
     value.type = JSON_ERROR;
     value.error.code = JSON_KEY_NOT_FOUND;
 #if !defined(NDEBUG)
-    value.error.key = key;
     value.error.message =
         (char *)json_memory_alloc(object->memory, ERROR_MESSAGE_SIZE);
+    sprintf(value.error.message, "key \"%s\" was not found", key);
+#else
+    value.error.message = 0;
 #endif // NDEBUG
     return value;
 }
@@ -372,7 +357,23 @@ JValue json_parse_string(JParser *parser, const char *input, size_t *pos)
     (*pos)++;
     size_t start = *pos;
     while (input[*pos] != '"' && input[*pos - 1] != '\\')
-        UNEXPECTED_EOF(input[(*pos)++], *pos - 1);
+    {
+        if (input[*pos] == '\0')
+        {
+            JValue value;
+            value.type = JSON_ERROR;
+            value.error.code = JSON_UNEXPECTED_EOF;
+#if !defined(NDEBUG)
+            value.error.message =
+                (char *)json_memory_alloc(&parser->memory, ERROR_MESSAGE_SIZE);
+            sprintf(value.error.message, "unexpected end of file at %zu", *pos);
+#else
+    value.error.message = 0;
+#endif // NDEBUG
+            return value;
+        }
+        (*pos)++;
+    }
     char *value_string = 0;
     if (*pos - start != 0)
     {
@@ -388,14 +389,32 @@ JValue json_parse_string(JParser *parser, const char *input, size_t *pos)
     return value;
 }
 
-JValue json_parse_number(const char *input, size_t *pos, int negative)
+JValue json_parse_number(JMemory *memory, const char *input, size_t *pos,
+                         int negative)
 {
     if (negative)
         (*pos)++;
     size_t start_pos = *pos;
     while (!json_whitespace_char(input[*pos]) && input[*pos] != ',' &&
            input[*pos] != '}' && input[*pos] != ']')
-        UNEXPECTED_EOF(input[(*pos)++], *pos - 1);
+    {
+        if (input[*pos] == '\0')
+        {
+            JValue value;
+            value.type = JSON_ERROR;
+            value.error.code = JSON_UNEXPECTED_EOF;
+#if !defined(NDEBUG)
+            value.error.message =
+                (char *)json_memory_alloc(memory, ERROR_MESSAGE_SIZE);
+            sprintf(value.error.message, "unexpected end of file at %zu", *pos);
+#else
+    (void) memory;
+    value.error.message = 0;
+#endif // NDEBUG
+            return value;
+        }
+        (*pos)++;
+    }
     size_t number_string_length = *pos - start_pos;
     size_t number = 0;
     size_t i = 0;
@@ -443,7 +462,20 @@ JValue json_parse_null(const char *input, size_t *pos)
 JValue json_parse_array(JParser *parser, const char *input, size_t *pos)
 {
     (*pos)++;
-    json_skip_whitespaces(input, pos);
+    if (!json_skip_whitespaces(input, pos))
+    {
+        JValue value;
+        value.type = JSON_ERROR;
+        value.error.code = JSON_UNEXPECTED_EOF;
+#if !defined(NDEBUG)
+        value.error.message =
+            (char *)json_memory_alloc(&parser->memory, ERROR_MESSAGE_SIZE);
+        sprintf(value.error.message, "unexpected end of file at %zu", *pos);
+#else
+    value.error.message = 0;
+#endif // NDEBUG
+        return value;
+    }
     JValue value;
     value.type = JSON_ARRAY;
     size_t start_pos = *pos;
@@ -457,7 +489,21 @@ JValue json_parse_array(JParser *parser, const char *input, size_t *pos)
     int inside_string = 0;
     do
     {
-        UNEXPECTED_EOF(input[start_pos], start_pos);
+        if (input[start_pos] == '\0')
+        {
+            JValue value;
+            value.type = JSON_ERROR;
+            value.error.code = JSON_UNEXPECTED_EOF;
+#if !defined(NDEBUG)
+            value.error.message =
+                (char *)json_memory_alloc(&parser->memory, ERROR_MESSAGE_SIZE);
+            sprintf(value.error.message, "unexpected end of file at %zu",
+                    start_pos);
+#else
+    value.error.message = 0;
+#endif // NDEBUG
+            return value;
+        }
         if (input[start_pos] == '"')
             inside_string = !inside_string;
         if (!inside_string && input[start_pos] == ',')
@@ -469,7 +515,20 @@ JValue json_parse_array(JParser *parser, const char *input, size_t *pos)
     {
         array_values[i] = json_parse_value(parser, input, pos);
         (*pos)++;
-        json_skip_whitespaces(input, pos);
+        if (!json_skip_whitespaces(input, pos))
+        {
+            JValue value;
+            value.type = JSON_ERROR;
+            value.error.code = JSON_UNEXPECTED_EOF;
+#if !defined(NDEBUG)
+            value.error.message =
+                (char *)json_memory_alloc(&parser->memory, ERROR_MESSAGE_SIZE);
+            sprintf(value.error.message, "unexpected end of file at %zu", *pos);
+#else
+    value.error.message = 0;
+#endif // NDEBUG
+            return value;
+        }
     }
     value.array = array_values;
     return value;
@@ -486,7 +545,7 @@ JValue json_parse_value(JParser *parser, const char *input, size_t *pos)
     case '"':
         return json_parse_string(parser, input, pos);
     case '-':
-        return json_parse_number(input, pos, 1);
+        return json_parse_number(&parser->memory, input, pos, 1);
     case '0':
     case '1':
     case '2':
@@ -497,7 +556,7 @@ JValue json_parse_value(JParser *parser, const char *input, size_t *pos)
     case '7':
     case '8':
     case '9':
-        return json_parse_number(input, pos, 0);
+        return json_parse_number(&parser->memory, input, pos, 0);
     case 't':
         return json_parse_boolean(input, pos, 1, "true", 4);
     case 'f':
@@ -511,7 +570,36 @@ JValue json_parse_value(JParser *parser, const char *input, size_t *pos)
 
 JValue json_parse_object(JParser *parser, const char *input, size_t *pos)
 {
-    json_match_char('{', input, pos);
+    int match = json_match_char('{', input, pos);
+    if (match == JSON_UNEXPECTED_EOF)
+    {
+        JValue value;
+        value.type = JSON_ERROR;
+        value.error.code = JSON_UNEXPECTED_EOF;
+#if !defined(NDEBUG)
+        value.error.message =
+            (char *)json_memory_alloc(&parser->memory, ERROR_MESSAGE_SIZE);
+        sprintf(value.error.message, "unexpected end of file at %zu", *pos);
+#else
+    value.error.message = 0;
+#endif // NDEBUG
+        return value;
+    }
+    if (match == JSON_PARSE_ERROR)
+    {
+        JValue value;
+        value.type = JSON_ERROR;
+        value.error.code = JSON_PARSE_ERROR;
+#if !defined(NDEBUG)
+        value.error.message =
+            (char *)json_memory_alloc(&parser->memory, ERROR_MESSAGE_SIZE);
+        sprintf(value.error.message, "expected '%c' found '%c' at %zu", '{',
+                input[*pos - 1], *pos - 1);
+#else
+    value.error.message = 0;
+#endif // NDEBUG
+        return value;
+    }
 
     JPair *pairs_start =
         (JPair *)(parser->memory.base + sizeof(JPair) * parser->pairs_commited);
@@ -522,14 +610,41 @@ JValue json_parse_object(JParser *parser, const char *input, size_t *pos)
     size_t i = *pos;
     do
     {
-        UNEXPECTED_EOF(input[i], i);
+        if (input[i] == '\0')
+        {
+            JValue value;
+            value.type = JSON_ERROR;
+            value.error.code = JSON_UNEXPECTED_EOF;
+#if !defined(NDEBUG)
+            value.error.message =
+                (char *)json_memory_alloc(&parser->memory, ERROR_MESSAGE_SIZE);
+            sprintf(value.error.message, "unexpected end of file at %zu", i);
+#else
+    value.error.message = 0;
+#endif // NDEBUG
+            return value;
+        }
         if (input[i] == '{')
         {
             size_t open_curly_count = 2;
             do
             {
                 i++;
-                UNEXPECTED_EOF(input[i], i);
+                if (input[i] == '\0')
+                {
+                    JValue value;
+                    value.type = JSON_ERROR;
+                    value.error.code = JSON_UNEXPECTED_EOF;
+#if !defined(NDEBUG)
+                    value.error.message = (char *)json_memory_alloc(
+                        &parser->memory, ERROR_MESSAGE_SIZE);
+                    sprintf(value.error.message,
+                            "unexpected end of file at %zu", i);
+#else
+    value.error.message = 0;
+#endif // NDEBUG
+                    return value;
+                }
                 if (input[i] == '{')
                     open_curly_count++;
                 if (input[i] == '}')
@@ -543,26 +658,128 @@ JValue json_parse_object(JParser *parser, const char *input, size_t *pos)
     } while (input[i] != '}');
 
 parse_pair:
+{
+    {
+        int match = json_match_char('"', input, pos);
+        if (match == JSON_UNEXPECTED_EOF)
+        {
+            JValue value;
+            value.type = JSON_ERROR;
+            value.error.code = JSON_UNEXPECTED_EOF;
+#if !defined(NDEBUG)
+            value.error.message =
+                (char *)json_memory_alloc(&parser->memory, ERROR_MESSAGE_SIZE);
+            sprintf(value.error.message, "unexpected end of file at %zu", *pos);
+#else
+    value.error.message = 0;
+#endif // NDEBUG
+            return value;
+        }
+        if (match == JSON_PARSE_ERROR)
+        {
+            JValue value;
+            value.type = JSON_ERROR;
+            value.error.code = JSON_PARSE_ERROR;
+#if !defined(NDEBUG)
+            value.error.message =
+                (char *)json_memory_alloc(&parser->memory, ERROR_MESSAGE_SIZE);
+            sprintf(value.error.message, "expected '%c' found '%c' at %zu", '"',
+                    input[*pos - 1], *pos - 1);
+#else
+    value.error.message = 0;
+#endif // NDEBUG
+            return value;
+        }
+    }
 
-    json_match_char('"', input, pos);
     (*pos)--;
     char *key = json_parse_string(parser, input, pos).string;
 
-    json_match_char(':', input, pos);
-    json_skip_whitespaces(input, pos);
+    {
+        int match = json_match_char(':', input, pos);
+        if (match == JSON_UNEXPECTED_EOF)
+        {
+            JValue value;
+            value.type = JSON_ERROR;
+            value.error.code = JSON_UNEXPECTED_EOF;
+#if !defined(NDEBUG)
+            value.error.message =
+                (char *)json_memory_alloc(&parser->memory, ERROR_MESSAGE_SIZE);
+            sprintf(value.error.message, "unexpected end of file at %zu", *pos);
+#else
+    value.error.message = 0;
+#endif // NDEBUG
+            return value;
+        }
+        if (match == JSON_PARSE_ERROR)
+        {
+            JValue value;
+            value.type = JSON_ERROR;
+            value.error.code = JSON_PARSE_ERROR;
+#if !defined(NDEBUG)
+            value.error.message =
+                (char *)json_memory_alloc(&parser->memory, ERROR_MESSAGE_SIZE);
+            sprintf(value.error.message, "expected '%c' found '%c' at %zu", ':',
+                    input[*pos - 1], *pos - 1);
+#else
+    value.error.message = 0;
+#endif // NDEBUG
+            return value;
+        }
+    }
+    if (!json_skip_whitespaces(input, pos))
+    {
+        JValue value;
+        value.type = JSON_ERROR;
+        value.error.code = JSON_UNEXPECTED_EOF;
+#if !defined(NDEBUG)
+        value.error.message =
+            (char *)json_memory_alloc(&parser->memory, ERROR_MESSAGE_SIZE);
+        sprintf(value.error.message, "unexpected end of file at %zu", *pos);
+#else
+    value.error.message = 0;
+#endif // NDEBUG
+        return value;
+    }
 
     JValue value = json_parse_value(parser, input, pos);
 
     json_object_add_pair(&object.object, key, value);
-    json_skip_whitespaces(input, pos);
+    if (!json_skip_whitespaces(input, pos))
+    {
+        JValue value;
+        value.type = JSON_ERROR;
+        value.error.code = JSON_UNEXPECTED_EOF;
+#if !defined(NDEBUG)
+        value.error.message =
+            (char *)json_memory_alloc(&parser->memory, ERROR_MESSAGE_SIZE);
+        sprintf(value.error.message, "unexpected end of file at %zu", *pos);
+#else
+    value.error.message = 0;
+#endif // NDEBUG
+        return value;
+    }
 
     if (input[*pos] == ',')
     {
         (*pos)++;
         goto parse_pair;
     }
-
-    json_match_char('}', input, pos);
+}
+    if (json_match_char('}', input, pos) == JSON_UNEXPECTED_EOF)
+    {
+        JValue value;
+        value.type = JSON_ERROR;
+        value.error.code = JSON_UNEXPECTED_EOF;
+#if !defined(NDEBUG)
+        value.error.message =
+            (char *)json_memory_alloc(&parser->memory, ERROR_MESSAGE_SIZE);
+        sprintf(value.error.message, "unexpected end of file at %zu", *pos);
+#else
+    value.error.message = 0;
+#endif // NDEBUG
+        return value;
+    }
     return object;
 }
 

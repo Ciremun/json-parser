@@ -27,6 +27,11 @@ int main()
 
     JParser parser = json_init(input);
     JValue json = json_parse(&parser, input);
+    if (json.type == JSON_ERROR)
+    {
+        printf("error: %s\n", json.error.message);
+        exit(1);
+    }
 
     // C++
     printf("empty string: %s\n", json["empty"].string);
@@ -52,7 +57,7 @@ int main()
     JValue *test = json_get(&json.object, "test").array;
     printf("  C:\n");
     if (value.type == JSON_ERROR)
-        printf("    error: %s\n", json_get_error(&value.error));
+        printf("    error: %s\n", value.error.message);
     printf("    string: %s\n", str);
     printf("    array string: %s\n", arr[0].string);
     printf("    negative number: %lld\n", test[0].number);
