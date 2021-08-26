@@ -2,6 +2,7 @@
 *.old
 *.exe
 *.obj
-
+test.c
 jp
 nobuild
+test
