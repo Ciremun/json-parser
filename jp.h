@@ -500,6 +500,21 @@ JValue json_parse_number(JParser *parser, jsize_t *pos, int negative)
     while (i < number_string_length)
     {
         jsize_t digit = (parser->input + start_pos)[i] - 48;
+        if (digit > 9)
+        {
+            JValue value;
+            value.type = JSON_ERROR;
+            value.error.code = JSON_PARSE_ERROR;
+#if !defined(NDEBUG)
+            value.error.message =
+                (char *)json_memory_alloc(&parser->memory, ERROR_MESSAGE_SIZE);
+            sprintf(value.error.message, "couldn't parse a number at %llu",
+                    start_pos + i + 1);
+#else
+            value.error.message = 0;
+#endif // NDEBUG
+            return value;
+        }
         number = number * 10 + digit;
         i++;
     }

@@ -40,7 +40,16 @@ int main()
 
     // C++
     printf("empty string: %s\n", json["empty"].string);
-    printf("positive number: %lld\n", json["aya"].number);
+    JValue aya = json["aya"];
+    if (aya.type == JSON_ERROR)
+    {
+        printf("error: %s\n", aya.error.message);
+        exit(1);
+    }
+    else
+    {
+        printf("positive number: %lld\n", aya.number);
+    }
     printf("array:\n");
     printf("  negative number: %lld\n", json["test"][0].number);
     printf("  true: %d\n", json["test"][1].boolean);
