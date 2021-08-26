@@ -1,5 +1,4 @@
 #define JP_IMPLEMENTATION
-#define JP_DEBUG
 #include "jp.h"
 
 #include <stdio.h>
@@ -26,6 +25,12 @@ int main()
     printf("%s\n", input);
 
     JParser parser = json_init(input);
+    if (parser.error.code != JSON_OK)
+    {
+        printf("error: %s\n", parser.error.message);
+        exit(1);
+    }
+
     JValue json = json_parse(&parser);
     if (json.type == JSON_ERROR)
     {
