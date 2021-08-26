@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #endif // NDEBUG
 
+// TODO(#16): map and parse /proc/meminfo file
 // TODO(#13): CI
 // TODO(#14): tests
 // TODO(#12): customizable allocator
