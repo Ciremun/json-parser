@@ -21,9 +21,6 @@
 
 #define JP_PANIC(...)
 
-#include <stdint.h> // system memory size
-#include <string.h> // memcpy, memcmp
-
 // TODO(#15): JERROR macro
 // TODO(#13): CI
 // TODO(#14): tests
@@ -56,7 +53,7 @@
 
 typedef struct JPair JPair;
 typedef struct JValue JValue;
-typedef unsigned long long int size_t_;
+typedef unsigned long long int jsize_t;
 
 typedef enum
 {
@@ -88,18 +85,18 @@ typedef struct
 {
     char *start;
     char *base;
-    size_t_ capacity;
+    jsize_t capacity;
 #ifdef _WIN32
-    size_t_ commited;
-    size_t_ allocated;
-    size_t_ commit_size;
+    jsize_t commited;
+    jsize_t allocated;
+    jsize_t commit_size;
 #endif // _WIN32
 } JMemory;
 
 typedef struct
 {
     JPair *pairs;
-    size_t_ pairs_count;
+    jsize_t pairs_count;
 #if !defined(NDEBUG)
     JMemory *memory;
 #endif // NDEBUG
@@ -120,7 +117,7 @@ struct JValue
     };
 #ifdef __cplusplus
     JValue operator[](const char *key);
-    JValue operator[](size_t_ idx);
+    JValue operator[](jsize_t idx);
     JValue operator[](int idx);
 #endif // __cplusplus
 };
@@ -134,34 +131,37 @@ struct JPair
 typedef struct
 {
     JMemory memory;
-    size_t_ pairs_total;
-    size_t_ pairs_commited;
+    jsize_t pairs_total;
+    jsize_t pairs_commited;
     const char *input;
 } JParser;
 
 #ifndef _WIN32
-int GetPhysicallyInstalledSystemMemory(size_t_ *output);
+int GetPhysicallyInstalledSystemMemory(jsize_t *output);
 #endif // _WIN32
 
 int json_whitespace_char(char c);
-int json_match_char(char c, const char *input, size_t_ *pos);
-int json_skip_whitespaces(const char *input, size_t_ *pos);
+int json_match_char(char c, const char *input, jsize_t *pos);
+int json_skip_whitespaces(const char *input, jsize_t *pos);
+int json_memcmp(const void *str1, const void *str2, jsize_t count);
+int json_strcmp(const char *p1, const char *p2);
 void json_memory_init(JMemory *memory);
 void json_memory_free(JMemory *memory);
-void *json_memory_alloc(JMemory *memory, size_t_ size);
 void json_object_init(JObject *object, JPair *pairs, JMemory *memory);
 void json_object_add_pair(JObject *object, char *key, JValue value);
+void *json_memcpy(void *dst, void const *src, jsize_t size);
+void *json_memory_alloc(JMemory *memory, jsize_t size);
 JParser json_init(const char *input);
 JValue json_get(JObject *object, const char *key);
 JValue json_parse(JParser *parser);
-JValue json_parse_object(JParser *parser, size_t_ *pos);
-JValue json_parse_value(JParser *parser, size_t_ *pos);
-JValue json_parse_string(JParser *parser, size_t_ *pos);
-JValue json_parse_number(JParser *parser, size_t_ *pos, int negative);
-JValue json_parse_boolean(JParser *parser, size_t_ *pos, int bool_value,
-                          const char *bool_string, size_t_ bool_string_length);
-JValue json_parse_null(JParser *parser, size_t_ *pos);
-JValue json_parse_array(JParser *parser, size_t_ *pos);
+JValue json_parse_object(JParser *parser, jsize_t *pos);
+JValue json_parse_value(JParser *parser, jsize_t *pos);
+JValue json_parse_string(JParser *parser, jsize_t *pos);
+JValue json_parse_number(JParser *parser, jsize_t *pos, int negative);
+JValue json_parse_boolean(JParser *parser, jsize_t *pos, int bool_value,
+                          const char *bool_string, jsize_t bool_string_length);
+JValue json_parse_null(JParser *parser, jsize_t *pos);
+JValue json_parse_array(JParser *parser, jsize_t *pos);
 
 #endif // JP_H_
 
@@ -185,7 +185,7 @@ JValue JValue::operator[](const char *key)
     }
     return json_get(&object, key);
 }
-JValue JValue::operator[](size_t_ idx)
+JValue JValue::operator[](jsize_t idx)
 {
     if (type != JSON_ARRAY)
     {
@@ -204,12 +204,12 @@ JValue JValue::operator[](size_t_ idx)
 }
 JValue JValue::operator[](int idx)
 {
-    return operator[](static_cast<size_t_>(idx));
+    return operator[](static_cast<jsize_t>(idx));
 }
 #endif // __cplusplus
 
 #ifndef _WIN32
-int GetPhysicallyInstalledSystemMemory(size_t_ *output)
+int GetPhysicallyInstalledSystemMemory(jsize_t *output)
 {
     FILE *meminfo = fopen("/proc/meminfo", "r");
     if (meminfo == 0)
@@ -233,16 +233,12 @@ int GetPhysicallyInstalledSystemMemory(size_t_ *output)
 }
 #endif // _WIN32
 
-int json_skip_whitespaces(const char *input, size_t_ *pos)
+int json_whitespace_char(char c)
 {
-    while (json_whitespace_char(input[*pos]))
-        (*pos)++;
-    if (input[*pos] == '\0')
-        return 0;
-    return 1;
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 }
 
-int json_match_char(char c, const char *input, size_t_ *pos)
+int json_match_char(char c, const char *input, jsize_t *pos)
 {
     do
     {
@@ -255,9 +251,40 @@ int json_match_char(char c, const char *input, size_t_ *pos)
     return match;
 }
 
-int json_whitespace_char(char c)
+int json_skip_whitespaces(const char *input, jsize_t *pos)
 {
-    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
+    while (json_whitespace_char(input[*pos]))
+        (*pos)++;
+    if (input[*pos] == '\0')
+        return 0;
+    return 1;
+}
+
+int json_memcmp(const void *str1, const void *str2, jsize_t count)
+{
+    const unsigned char *s1 = (const unsigned char *)str1;
+    const unsigned char *s2 = (const unsigned char *)str2;
+    while (count-- > 0)
+    {
+        if (*s1++ != *s2++)
+            return s1[-1] < s2[-1] ? -1 : 1;
+    }
+    return 0;
+}
+
+int json_strcmp(const char *p1, const char *p2)
+{
+    const unsigned char *s1 = (const unsigned char *)p1;
+    const unsigned char *s2 = (const unsigned char *)p2;
+    unsigned char c1, c2;
+    do
+    {
+        c1 = (unsigned char)*s1++;
+        c2 = (unsigned char)*s2++;
+        if (c1 == 0)
+            return c1 - c2;
+    } while (c1 == c2);
+    return c1 - c2;
 }
 
 void json_memory_init(JMemory *memory)
@@ -265,9 +292,7 @@ void json_memory_init(JMemory *memory)
     if (memory->capacity == 0)
     {
         if (!GetPhysicallyInstalledSystemMemory(&memory->capacity))
-            memory->capacity = INTPTR_MAX == INT32_MAX
-                                   ? 4294967295ULL
-                                   : 16ULL * 1024 * 1024 * 1024;
+            memory->capacity = (jsize_t)4294967295;
         else
             memory->capacity *= 1024;
     }
@@ -288,7 +313,16 @@ void json_memory_init(JMemory *memory)
     memory->start = memory->base;
 }
 
-void *json_memory_alloc(JMemory *memory, size_t_ size)
+void *json_memcpy(void *dst, void const *src, jsize_t size)
+{
+    unsigned char *source = (unsigned char *)src;
+    unsigned char *dest = (unsigned char *)dst;
+    while (size--)
+        *dest++ = *source++;
+    return dst;
+}
+
+void *json_memory_alloc(JMemory *memory, jsize_t size)
 {
 #ifdef _WIN32
     memory->allocated += size;
@@ -334,10 +368,25 @@ void json_object_add_pair(JObject *object, char *key, JValue value)
     object->pairs_count++;
 }
 
+JParser json_init(const char *input)
+{
+    JParser parser;
+    parser.memory.capacity = 0;
+    json_memory_init(&parser.memory);
+    parser.pairs_total = 0;
+    parser.pairs_commited = 0;
+    parser.input = input;
+    for (jsize_t i = 0; input[i] != 0; ++i)
+        if (input[i] == ':' && input[i - 1] == '"' && input[i - 2] != '\\')
+            parser.pairs_total++;
+    json_memory_alloc(&parser.memory, sizeof(JPair) * parser.pairs_total);
+    return parser;
+}
+
 JValue json_get(JObject *object, const char *key)
 {
-    for (size_t_ i = 0; i < object->pairs_count; ++i)
-        if (strcmp(key, object->pairs[i].key) == 0)
+    for (jsize_t i = 0; i < object->pairs_count; ++i)
+        if (json_strcmp(key, object->pairs[i].key) == 0)
             return object->pairs[i].value;
     JValue value;
     value.type = JSON_ERROR;
@@ -352,31 +401,16 @@ JValue json_get(JObject *object, const char *key)
     return value;
 }
 
-JParser json_init(const char *input)
-{
-    JParser parser;
-    parser.memory.capacity = 0;
-    json_memory_init(&parser.memory);
-    parser.pairs_total = 0;
-    parser.pairs_commited = 0;
-    parser.input = input;
-    for (size_t_ i = 0; input[i] != 0; ++i)
-        if (input[i] == ':' && input[i - 1] == '"' && input[i - 2] != '\\')
-            parser.pairs_total++;
-    json_memory_alloc(&parser.memory, sizeof(JPair) * parser.pairs_total);
-    return parser;
-}
-
 JValue json_parse(JParser *parser)
 {
-    size_t_ pos = 0;
+    jsize_t pos = 0;
     return json_parse_object(parser, &pos);
 }
 
-JValue json_parse_string(JParser *parser, size_t_ *pos)
+JValue json_parse_string(JParser *parser, jsize_t *pos)
 {
     (*pos)++;
-    size_t_ start = *pos;
+    jsize_t start = *pos;
     while (parser->input[*pos] != '"' && parser->input[*pos - 1] != '\\')
     {
         if (parser->input[*pos] == '\0')
@@ -386,9 +420,9 @@ JValue json_parse_string(JParser *parser, size_t_ *pos)
     char *value_string = 0;
     if (*pos - start != 0)
     {
-        size_t_ string_size = *pos - start + 1;
+        jsize_t string_size = *pos - start + 1;
         value_string = (char *)json_memory_alloc(&parser->memory, string_size);
-        memcpy(value_string, parser->input + start, string_size - 1);
+        json_memcpy(value_string, parser->input + start, string_size - 1);
         value_string[string_size - 1] = '\0';
     }
     JValue value;
@@ -398,11 +432,11 @@ JValue json_parse_string(JParser *parser, size_t_ *pos)
     return value;
 }
 
-JValue json_parse_number(JParser *parser, size_t_ *pos, int negative)
+JValue json_parse_number(JParser *parser, jsize_t *pos, int negative)
 {
     if (negative)
         (*pos)++;
-    size_t_ start_pos = *pos;
+    jsize_t start_pos = *pos;
     while (!json_whitespace_char(parser->input[*pos]) &&
            parser->input[*pos] != ',' && parser->input[*pos] != '}' &&
            parser->input[*pos] != ']')
@@ -411,12 +445,12 @@ JValue json_parse_number(JParser *parser, size_t_ *pos, int negative)
             UNEXPECTED_EOF(*pos);
         (*pos)++;
     }
-    size_t_ number_string_length = *pos - start_pos;
-    size_t_ number = 0;
-    size_t_ i = 0;
+    jsize_t number_string_length = *pos - start_pos;
+    jsize_t number = 0;
+    jsize_t i = 0;
     while (i < number_string_length)
     {
-        size_t_ digit = (parser->input + start_pos)[i] - 48;
+        jsize_t digit = (parser->input + start_pos)[i] - 48;
         number = number * 10 + digit;
         i++;
     }
@@ -428,10 +462,10 @@ JValue json_parse_number(JParser *parser, size_t_ *pos, int negative)
     return value;
 }
 
-JValue json_parse_boolean(JParser *parser, size_t_ *pos, int bool_value,
-                          const char *bool_string, size_t_ bool_string_length)
+JValue json_parse_boolean(JParser *parser, jsize_t *pos, int bool_value,
+                          const char *bool_string, jsize_t bool_string_length)
 {
-    if (memcmp(parser->input + *pos, bool_string, bool_string_length) == 0)
+    if (json_memcmp(parser->input + *pos, bool_string, bool_string_length) == 0)
     {
         JValue value;
         value.type = JSON_BOOL;
@@ -442,9 +476,9 @@ JValue json_parse_boolean(JParser *parser, size_t_ *pos, int bool_value,
     JP_PANIC("failed to parse %s", bool_string);
 }
 
-JValue json_parse_null(JParser *parser, size_t_ *pos)
+JValue json_parse_null(JParser *parser, jsize_t *pos)
 {
-    if (memcmp(parser->input + *pos, "null", 4) == 0)
+    if (json_memcmp(parser->input + *pos, "null", 4) == 0)
     {
         JValue value;
         value.type = JSON_NULL;
@@ -455,21 +489,21 @@ JValue json_parse_null(JParser *parser, size_t_ *pos)
     JP_PANIC("failed to parse null");
 }
 
-JValue json_parse_array(JParser *parser, size_t_ *pos)
+JValue json_parse_array(JParser *parser, jsize_t *pos)
 {
     (*pos)++;
     if (!json_skip_whitespaces(parser->input, pos))
         UNEXPECTED_EOF(*pos);
     JValue value;
     value.type = JSON_ARRAY;
-    size_t_ start_pos = *pos;
+    jsize_t start_pos = *pos;
     if (parser->input[start_pos] == ']')
     {
         value.array = 0;
         (*pos)++;
         return value;
     }
-    size_t_ array_values_count = 1;
+    jsize_t array_values_count = 1;
     int inside_string = 0;
     do
     {
@@ -482,7 +516,7 @@ JValue json_parse_array(JParser *parser, size_t_ *pos)
     } while (parser->input[++start_pos] != ']');
     JValue *array_values = (JValue *)json_memory_alloc(
         &parser->memory, sizeof(JValue) * array_values_count);
-    for (size_t_ i = 0; i < array_values_count; ++i)
+    for (jsize_t i = 0; i < array_values_count; ++i)
     {
         array_values[i] = json_parse_value(parser, pos);
         (*pos)++;
@@ -493,7 +527,7 @@ JValue json_parse_array(JParser *parser, size_t_ *pos)
     return value;
 }
 
-JValue json_parse_value(JParser *parser, size_t_ *pos)
+JValue json_parse_value(JParser *parser, jsize_t *pos)
 {
     switch (parser->input[*pos])
     {
@@ -527,7 +561,7 @@ JValue json_parse_value(JParser *parser, size_t_ *pos)
     }
 }
 
-JValue json_parse_object(JParser *parser, size_t_ *pos)
+JValue json_parse_object(JParser *parser, jsize_t *pos)
 {
     int match = json_match_char('{', parser->input, pos);
     if (match == JSON_UNEXPECTED_EOF)
@@ -554,14 +588,14 @@ JValue json_parse_object(JParser *parser, size_t_ *pos)
     object.type = JSON_OBJECT;
     json_object_init(&object.object, pairs_start, &parser->memory);
 
-    size_t_ i = *pos;
+    jsize_t i = *pos;
     do
     {
         if (parser->input[i] == '\0')
             UNEXPECTED_EOF(i);
         if (parser->input[i] == '{')
         {
-            size_t_ open_curly_count = 2;
+            jsize_t open_curly_count = 2;
             do
             {
                 i++;
