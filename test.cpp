@@ -26,7 +26,7 @@ int main()
     printf("%s\n", input);
 
     JParser parser = json_init(input);
-    JValue json = json_parse(&parser, input);
+    JValue json = json_parse(&parser);
     if (json.type == JSON_ERROR)
     {
         printf("error: %s\n", json.error.message);
