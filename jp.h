@@ -23,11 +23,9 @@
 #include <stdlib.h>
 #endif // NDEBUG
 
-// TODO(#15): JERROR macro
 // TODO(#13): CI
 // TODO(#14): tests
 // TODO(#12): customizable allocator
-// TODO(#10): error reporting
 #if !defined(NDEBUG)
 #define ERROR_MESSAGE_SIZE 1024
 #define UNEXPECTED_EOF(pos)                                                    \
