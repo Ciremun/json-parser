@@ -4,15 +4,15 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#if !defined(NDEBUG)
-#include <stdio.h>
-#endif // NDEBUG
 #else
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif             // _GNU_SOURCE
-#include <stdio.h> // system memory size
+#include <fcntl.h>
+#include <unistd.h>
 #include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #if !defined(NDEBUG)
 #include <errno.h>
 #include <string.h>
@@ -21,6 +21,7 @@
 
 #if !defined(NDEBUG)
 #include <stdlib.h>
+#include <stdio.h>
 #endif // NDEBUG
 
 // TODO(#17): docs
@@ -215,24 +216,41 @@ JValue JValue::operator[](int idx)
 #ifndef _WIN32
 int GetPhysicallyInstalledSystemMemory(jsize_t *output)
 {
-    FILE *meminfo = fopen("/proc/meminfo", "r");
-    if (meminfo == 0)
-    {
-        fprintf(stderr, "Error opening file '/proc/meminfo'");
+    int fd = open("/proc/meminfo", O_RDONLY);
+    if (fd == -1)
         return 0;
-    }
 
-    char line[256];
-    while (fgets(line, sizeof(line), meminfo))
+    char buff[64];
+    int count = 0;
+    if ((count = read(fd, buff, 64)) <= 0)
+        goto error;
+
+    if (json_memcmp(buff, "MemTotal:", 9) != 0)
+        goto error;
+
+    jsize_t pos;
+    pos = 9;
+    if (!json_skip_whitespaces(buff, &pos))
+        goto error;
+
+    jsize_t i;
+    i = 0;
+
+    jsize_t digit;
+
+    while ((buff + pos)[i] != ' ')
     {
-        if (sscanf(line, "MemTotal: %llu kB", output) == 1)
-        {
-            fclose(meminfo);
-            return 1;
-        }
+        digit = (buff + pos)[i] - 48;
+        if (digit > 9)
+            goto error;
+        *output = *output * 10 + digit;
+        i++;
     }
 
-    fclose(meminfo);
+    close(fd);
+    return 1;
+error:
+    close(fd);
     return 0;
 }
 #endif // _WIN32
