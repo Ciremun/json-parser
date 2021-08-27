@@ -28,7 +28,7 @@ int main(void)
     JValue *test = json_get(&json.object, "test").array;
     printf("  C:\n");
     if (value.type == JSON_ERROR)
-        exit(1);
+        printf("key \"error\" was not found\n");
     printf("    string: %s\n", str);
     printf("    array string: %s\n", arr[0].string);
     printf("    negative number: %lld\n", test[0].number);
