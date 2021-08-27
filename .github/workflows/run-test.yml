@@ -82,13 +82,13 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: build and run
-        run: gcc -Wall -Wextra -pedantic -std=c99 test.c -otest && ./test
+        run: gcc -Wall -Wextra -pedantic -std=c11 test.c -otest && ./test
   ubuntu-clang-c:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: build and run
-        run: clang -Wall -Wextra -pedantic -std=c99 test.c -otest && ./test
+        run: clang -Wall -Wextra -pedantic -std=c11 test.c -otest && ./test
   windows-msvc-c:
     runs-on: windows-latest
     steps:
@@ -120,7 +120,7 @@ jobs:
           msys2 -c 'pacman --noconfirm -Suu'
       - name: build and run
         run: |
-          gcc -Wall -Wextra -pedantic -std=c99 test.c -otest && test.exe
+          gcc -Wall -Wextra -pedantic -std=c11 test.c -otest && test.exe
         shell: cmd
         env:
           CC: gcc
@@ -147,7 +147,7 @@ jobs:
           msys2 -c 'pacman --noconfirm -Suu'
       - name: build and run
         run: |
-          clang -Wall -Wextra -pedantic -std=c99 test.c -otest && test.exe
+          clang -Wall -Wextra -pedantic -std=c11 test.c -otest && test.exe
         shell: cmd
         env:
           CXX: clang
