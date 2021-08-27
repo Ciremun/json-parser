@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define CXXFLAGS "-Wall", "-Wextra", "-pedantic", "-std=c++2a", "-ggdb"
-#define MSVC_CXXFLAGS "/nologo", "/W3", "/std:c++latest", "/Zc:preprocessor"
+#define CXXFLAGS "-Wall", "-Wextra", "-pedantic", "-std=c++11", "-ggdb"
+#define MSVC_CXXFLAGS "/nologo", "/W3", "/std:c++11"
 #define OUTPUT "jp"
 #define OUTPUT_FLAGS "-o" OUTPUT
 #define MSVC_OUTPUT_FLAGS "/Fe:" OUTPUT
