@@ -107,14 +107,7 @@ JMemory *jmem_init()
     memory.start = memory.base;
 
     JMem *memory_ptr = (JMem *)jmem_alloc(&memory, sizeof(JMem));
-#ifdef _WIN32
-    memory_ptr->commited = memory.commited;
-    memory_ptr->allocated = memory.allocated;
-    memory_ptr->commit_size = memory.commit_size;
-#endif // _WIN32
-    memory_ptr->capacity = memory.capacity;
-    memory_ptr->base = memory.base;
-    memory_ptr->start = memory.start;
+    json_memcpy(memory_ptr, &memory, sizeof(JMem));
 
     JMemory *mem = (JMemory *)jmem_alloc(memory_ptr, sizeof(JMemory));
     mem->alloc = jmem_alloc;
