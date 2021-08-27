@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #endif // NDEBUG
 
+// TODO(#18): NDEBUG test
+// TODO: custom allocator test
 // TODO(#17): docs
 // TODO(#14): tests
 #if !defined(NDEBUG)
