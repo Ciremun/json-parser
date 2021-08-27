@@ -1,0 +1,154 @@
+name: CI
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  ubuntu-gcc-cpp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: build and run
+        run: g++ -Wall -Wextra -pedantic -std=c++11 test.cpp -otest && ./test
+  ubuntu-clang-cpp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: build and run
+        run: clang -Wall -Wextra -pedantic -std=c++11 test.cpp -otest && ./test
+  windows-msvc-cpp:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: seanmiddleditch/gha-setup-vsdevenv@master
+      - name: build and run
+        shell: cmd
+        run: |
+          cl.exe /nologo /W3 /std:c++11 test.cpp /Fe:test && test.exe
+  windows-gcc-cpp:
+  runs-on: windows-latest
+  strategy:
+    fail-fast: false
+    matrix:
+      include: [{ msystem: MINGW64, msystem_lower: mingw64, arch: x86_64 }]          
+  steps:
+    - uses: actions/checkout@v1
+      with:
+        path: temp
+        fetch-depth: 0
+    - uses: msys2/setup-msys2@v2
+      with:
+        msystem: ${{ matrix.msystem }}
+        install: mingw-w64-${{ matrix.arch }}-gcc
+        update: true
+    - name: update pkgs
+      run: |
+        msys2 -c 'pacman --noconfirm -Suuy'
+        msys2 -c 'pacman --noconfirm -Suu'
+    - name: build and run
+      run: |
+        g++ -Wall -Wextra -pedantic -std=c++11 test.cpp -otest && test.exe
+      shell: cmd
+      env:
+        CXX: g++
+        PATH: D:\a\_temp\msys\msys64\usr\bin;D:\a\_temp\msys\msys64\${{ matrix.msystem_lower }}\bin;D:\a\_temp\msys
+  windows-clang-cpp:
+  runs-on: windows-latest
+  strategy:
+    fail-fast: false
+    matrix:
+      include: [{ msystem: MINGW64, msystem_lower: mingw64, arch: x86_64 }]          
+  steps:
+    - uses: actions/checkout@v1
+      with:
+        path: temp
+        fetch-depth: 0
+    - uses: msys2/setup-msys2@v2
+      with:
+        msystem: ${{ matrix.msystem }}
+        install: mingw-w64-${{ matrix.arch }}-clang
+        update: true
+    - name: update pkgs
+      run: |
+        msys2 -c 'pacman --noconfirm -Suuy'
+        msys2 -c 'pacman --noconfirm -Suu'
+    - name: build and run
+      run: |
+        clang -Wall -Wextra -pedantic -std=c++11 test.cpp -otest && test.exe
+      shell: cmd
+      env:
+        CXX: clang
+        PATH: D:\a\_temp\msys\msys64\usr\bin;D:\a\_temp\msys\msys64\${{ matrix.msystem_lower }}\bin;D:\a\_temp\msys
+  ubuntu-gcc-c:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: build and run
+        run: gcc -Wall -Wextra -pedantic -std=c99 test.c -otest && ./test
+  ubuntu-clang-c:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: build and run
+        run: clang -Wall -Wextra -pedantic -std=c99 test.c -otest && ./test
+  windows-msvc-c:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: seanmiddleditch/gha-setup-vsdevenv@master
+      - name: build and run
+        shell: cmd
+        run: |
+          cl.exe /nologo /W3 /std:c11 test.c /Fe:test && test.exe
+  windows-gcc-c:
+  runs-on: windows-latest
+  strategy:
+    fail-fast: false
+    matrix:
+      include: [{ msystem: MINGW64, msystem_lower: mingw64, arch: x86_64 }]          
+  steps:
+    - uses: actions/checkout@v1
+      with:
+        path: temp
+        fetch-depth: 0
+    - uses: msys2/setup-msys2@v2
+      with:
+        msystem: ${{ matrix.msystem }}
+        install: mingw-w64-${{ matrix.arch }}-gcc
+        update: true
+    - name: update pkgs
+      run: |
+        msys2 -c 'pacman --noconfirm -Suuy'
+        msys2 -c 'pacman --noconfirm -Suu'
+    - name: build and run
+      run: |
+        gcc -Wall -Wextra -pedantic -std=c99 test.c -otest && test.exe
+      shell: cmd
+      env:
+        CC: gcc
+        PATH: D:\a\_temp\msys\msys64\usr\bin;D:\a\_temp\msys\msys64\${{ matrix.msystem_lower }}\bin;D:\a\_temp\msys
+  windows-clang-c:
+  runs-on: windows-latest
+  strategy:
+    fail-fast: false
+    matrix:
+      include: [{ msystem: MINGW64, msystem_lower: mingw64, arch: x86_64 }]          
+  steps:
+    - uses: actions/checkout@v1
+      with:
+        path: temp
+        fetch-depth: 0
+    - uses: msys2/setup-msys2@v2
+      with:
+        msystem: ${{ matrix.msystem }}
+        install: mingw-w64-${{ matrix.arch }}-clang
+        update: true
+    - name: update pkgs
+      run: |
+        msys2 -c 'pacman --noconfirm -Suuy'
+        msys2 -c 'pacman --noconfirm -Suu'
+    - name: build and run
+      run: |
+        clang -Wall -Wextra -pedantic -std=c99 test.c -otest && test.exe
+      shell: cmd
+      env:
+        CXX: clang
+        PATH: D:\a\_temp\msys\msys64\usr\bin;D:\a\_temp\msys\msys64\${{ matrix.msystem_lower }}\bin;D:\a\_temp\msys
