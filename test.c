@@ -1,3 +1,6 @@
+#define JMEM_IMPLEMENTATION
+#include "jmem.h"
+
 #define JP_IMPLEMENTATION
 #include "jp.h"
 
