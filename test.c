@@ -7,13 +7,15 @@ int main(void)
 {
     char *input = read_file_as_str("input.json");
 
-    JParser parser = json_init(input);
-    if (parser.error.code != JSON_OK)
-        VALUE_ERROR(parser);
+    JMemory *memory = jmem_init();
+    if (memory == 0)
+        exit(1);
+
+    JParser parser = json_init(memory, input);
 
     JValue json = json_parse(&parser);
     if (json.type == JSON_ERROR)
-        VALUE_ERROR(json);
+        exit(1);
 
     JValue value = json_get(&json.object, "error");
     JObject owo = json_get(&json.object, "owo").object;
@@ -28,7 +30,7 @@ int main(void)
     printf("    array string: %s\n", arr[0].string);
     printf("    negative number: %lld\n", test[0].number);
 
-    json_memory_free(&parser.memory);
+    jmem_free(memory);
     free(input);
 
     return 0;

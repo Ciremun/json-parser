@@ -94,13 +94,13 @@ JMemory *jmem_init()
     memory.commited = 0;
     memory.allocated = 0;
     memory.commit_size = 1024;
-    memory.base = (char *)(VirtualAlloc(0, memory.capacity, MEM_RESERVE,
-                                         PAGE_READWRITE));
+    memory.base =
+        (char *)(VirtualAlloc(0, memory.capacity, MEM_RESERVE, PAGE_READWRITE));
     if (memory.base == 0)
         return 0;
 #else
     memory.base = (char *)(mmap(0, memory.capacity, PROT_READ | PROT_WRITE,
-                                 MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+                                MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
     if (memory.base == MAP_FAILED)
         return 0;
 #endif // _WIN32

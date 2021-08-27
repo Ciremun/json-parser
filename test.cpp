@@ -17,10 +17,7 @@ int main()
 
     JMemory *memory = jmem_init();
     if (memory == 0)
-    {
-        fprintf(stderr, "jmem_init failed");
         exit(1);
-    }
 
     // custom alloc
     //

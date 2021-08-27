@@ -1,11 +1,6 @@
 #ifndef JP_H_
 #define JP_H_
 
-#if !defined(_WIN32) && !defined(NDEBUG)
-#include <errno.h>
-#include <string.h>
-#endif // _WIN32 && NDEBUG
-
 #if !defined(NDEBUG)
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,7 +14,7 @@
     {                                                                          \
         JValue value;                                                          \
         value.type = JSON_ERROR;                                               \
-        value.error = JSON_UNEXPECTED_EOF;                                \
+        value.error = JSON_UNEXPECTED_EOF;                                     \
         fprintf(stderr, "unexpected end of file at %llu", pos);                \
         return value;                                                          \
     } while (0)
@@ -29,7 +24,7 @@
     {                                                                          \
         JValue value;                                                          \
         value.type = JSON_ERROR;                                               \
-        value.error = JSON_UNEXPECTED_EOF;                                \
+        value.error = JSON_UNEXPECTED_EOF;                                     \
         return value;                                                          \
     } while (0)
 #endif // NDEBUG
@@ -492,8 +487,8 @@ JValue json_parse_object(JParser *parser, jsize_t *pos)
         return value;
     }
 
-    JPair *pairs_start =
-        (JPair *)(parser->memory->base + sizeof(JPair) * parser->pairs_commited);
+    JPair *pairs_start = (JPair *)(parser->memory->base +
+                                   sizeof(JPair) * parser->pairs_commited);
     JValue object;
     object.type = JSON_OBJECT;
     json_object_init(&object.object, pairs_start);
