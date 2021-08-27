@@ -7,12 +7,12 @@
 #else
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
-#endif             // _GNU_SOURCE
+#endif // _GNU_SOURCE
 #include <fcntl.h>
-#include <unistd.h>
 #include <sys/mman.h>
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 #if !defined(NDEBUG)
 #include <errno.h>
 #include <string.h>
@@ -20,12 +20,11 @@
 #endif // _WIN32
 
 #if !defined(NDEBUG)
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #endif // NDEBUG
 
 // TODO(#17): docs
-// TODO(#16): map and parse /proc/meminfo file
 // TODO(#13): CI
 // TODO(#14): tests
 // TODO(#12): customizable allocator
