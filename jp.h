@@ -1,22 +1,10 @@
 #ifndef JP_H_
 #define JP_H_
 
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#else
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif // _GNU_SOURCE
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#if !defined(NDEBUG)
+#if !defined(_WIN32) && !defined(NDEBUG)
 #include <errno.h>
 #include <string.h>
-#endif // NDEBUG
-#endif // _WIN32
+#endif // _WIN32 && NDEBUG
 
 #if !defined(NDEBUG)
 #include <stdio.h>
@@ -24,20 +12,15 @@
 #endif // NDEBUG
 
 // TODO(#17): docs
-// TODO(#13): CI
 // TODO(#14): tests
-// TODO(#12): customizable allocator
 #if !defined(NDEBUG)
-#define ERROR_MESSAGE_SIZE 1024
 #define UNEXPECTED_EOF(pos)                                                    \
     do                                                                         \
     {                                                                          \
         JValue value;                                                          \
         value.type = JSON_ERROR;                                               \
-        value.error.code = JSON_UNEXPECTED_EOF;                                \
-        value.error.message =                                                  \
-            (char *)json_memory_alloc(&parser->memory, ERROR_MESSAGE_SIZE);    \
-        sprintf(value.error.message, "unexpected end of file at %llu", pos);   \
+        value.error = JSON_UNEXPECTED_EOF;                                \
+        fprintf(stderr, "unexpected end of file at %llu", pos);                \
         return value;                                                          \
     } while (0)
 #else
@@ -46,8 +29,7 @@
     {                                                                          \
         JValue value;                                                          \
         value.type = JSON_ERROR;                                               \
-        value.error.code = JSON_UNEXPECTED_EOF;                                \
-        value.error.message = 0;                                               \
+        value.error = JSON_UNEXPECTED_EOF;                                \
         return value;                                                          \
     } while (0)
 #endif // NDEBUG
@@ -58,8 +40,7 @@ typedef unsigned long long int jsize_t;
 
 typedef enum
 {
-    JSON_OK = 10,
-    JSON_KEY_NOT_FOUND,
+    JSON_KEY_NOT_FOUND = 2,
     JSON_UNEXPECTED_EOF,
     JSON_PARSE_ERROR,
     JSON_TYPE_ERROR,
@@ -79,29 +60,15 @@ typedef enum
 
 typedef struct
 {
-    JCode code;
-    char *message;
-} JError;
-
-typedef struct
-{
-    char *start;
     char *base;
-    jsize_t capacity;
-#ifdef _WIN32
-    jsize_t commited;
-    jsize_t allocated;
-    jsize_t commit_size;
-#endif // _WIN32
+    void *(*alloc)(void *struct_ptr, unsigned long long int size);
+    void *struct_ptr;
 } JMemory;
 
 typedef struct
 {
     JPair *pairs;
     jsize_t pairs_count;
-#if !defined(NDEBUG)
-    JMemory *memory;
-#endif // NDEBUG
 } JObject;
 
 struct JValue
@@ -113,7 +80,7 @@ struct JValue
         int boolean;
         int null;
         char *string;
-        JError error;
+        JCode error;
         JObject object;
         JValue *array;
     };
@@ -132,29 +99,21 @@ struct JPair
 
 typedef struct
 {
-    JMemory memory;
-    JError error;
+    JMemory *memory;
     jsize_t pairs_total;
     jsize_t pairs_commited;
     const char *input;
 } JParser;
-
-#ifndef _WIN32
-int GetPhysicallyInstalledSystemMemory(jsize_t *output);
-#endif // _WIN32
 
 int json_whitespace_char(char c);
 int json_match_char(char c, const char *input, jsize_t *pos);
 int json_skip_whitespaces(const char *input, jsize_t *pos);
 int json_memcmp(const void *str1, const void *str2, jsize_t count);
 int json_strcmp(const char *p1, const char *p2);
-int json_memory_init(JMemory *memory);
-int json_memory_free(JMemory *memory);
-void json_object_init(JObject *object, JPair *pairs, JMemory *memory);
+void json_object_init(JObject *object, JPair *pairs);
 void json_object_add_pair(JObject *object, char *key, JValue value);
 void *json_memcpy(void *dst, void const *src, jsize_t size);
-void *json_memory_alloc(JMemory *memory, jsize_t size);
-JParser json_init(const char *input);
+JParser json_init(JMemory *memory, const char *input);
 JValue json_get(JObject *object, const char *key);
 JValue json_parse(JParser *parser);
 JValue json_parse_object(JParser *parser, jsize_t *pos);
@@ -177,12 +136,9 @@ JValue JValue::operator[](const char *key)
     {
         JValue value;
         value.type = JSON_ERROR;
-        value.error.code = JSON_TYPE_ERROR;
+        value.error = JSON_TYPE_ERROR;
 #if !defined(NDEBUG)
-        value.error.message = (char *)malloc(ERROR_MESSAGE_SIZE);
-        sprintf(value.error.message, "value is not an object at '%s'", key);
-#else
-        value.error.message = 0;
+        fprintf(stderr, "value is not an object at '%s'", key);
 #endif // NDEBUG
         return value;
     }
@@ -194,12 +150,9 @@ JValue JValue::operator[](jsize_t idx)
     {
         JValue value;
         value.type = JSON_ERROR;
-        value.error.code = JSON_TYPE_ERROR;
+        value.error = JSON_TYPE_ERROR;
 #if !defined(NDEBUG)
-        value.error.message = (char *)malloc(ERROR_MESSAGE_SIZE);
-        sprintf(value.error.message, "value is not an array at [%llu]", idx);
-#else
-        value.error.message = 0;
+        fprintf(stderr, "value is not an array at [%llu]", idx);
 #endif // NDEBUG
         return value;
     }
@@ -210,48 +163,6 @@ JValue JValue::operator[](int idx)
     return operator[](static_cast<jsize_t>(idx));
 }
 #endif // __cplusplus
-
-#ifndef _WIN32
-int GetPhysicallyInstalledSystemMemory(jsize_t *output)
-{
-    int fd = open("/proc/meminfo", O_RDONLY);
-    if (fd == -1)
-        return 0;
-
-    char buff[64];
-    int count = 0;
-    if ((count = read(fd, buff, 64)) <= 0)
-        goto error;
-
-    if (json_memcmp(buff, "MemTotal:", 9) != 0)
-        goto error;
-
-    jsize_t pos;
-    pos = 9;
-    if (!json_skip_whitespaces(buff, &pos))
-        goto error;
-
-    jsize_t i;
-    i = 0;
-
-    jsize_t digit;
-
-    while ((buff + pos)[i] != ' ')
-    {
-        digit = (buff + pos)[i] - 48;
-        if (digit > 9)
-            goto error;
-        *output = *output * 10 + digit;
-        i++;
-    }
-
-    close(fd);
-    return 1;
-error:
-    close(fd);
-    return 0;
-}
-#endif // _WIN32
 
 int json_whitespace_char(char c)
 {
@@ -307,33 +218,6 @@ int json_strcmp(const char *p1, const char *p2)
     return c1 - c2;
 }
 
-int json_memory_init(JMemory *memory)
-{
-    if (memory->capacity == 0)
-    {
-        if (!GetPhysicallyInstalledSystemMemory(&memory->capacity))
-            memory->capacity = (jsize_t)4294967295;
-        else
-            memory->capacity *= 1024;
-    }
-#ifdef _WIN32
-    memory->commited = 0;
-    memory->allocated = 0;
-    memory->commit_size = 1024;
-    memory->base = (char *)(VirtualAlloc(0, memory->capacity, MEM_RESERVE,
-                                         PAGE_READWRITE));
-    if (memory->base == 0)
-        return 0;
-#else
-    memory->base = (char *)(mmap(0, memory->capacity, PROT_READ | PROT_WRITE,
-                                 MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
-    if (memory->base == MAP_FAILED)
-        return 0;
-#endif // _WIN32
-    memory->start = memory->base;
-    return 1;
-}
-
 void *json_memcpy(void *dst, void const *src, jsize_t size)
 {
     unsigned char *source = (unsigned char *)src;
@@ -343,44 +227,10 @@ void *json_memcpy(void *dst, void const *src, jsize_t size)
     return dst;
 }
 
-void *json_memory_alloc(JMemory *memory, jsize_t size)
-{
-#ifdef _WIN32
-    memory->allocated += size;
-    if (memory->allocated * 2 > memory->commited)
-    {
-        memory->commit_size += size * 2;
-        if (VirtualAlloc(memory->start, memory->commit_size, MEM_COMMIT,
-                         PAGE_READWRITE) == 0)
-            return 0;
-        memory->commited += memory->commit_size;
-    }
-#endif // _WIN32
-    memory->start += size;
-    return memory->start - size;
-}
-
-int json_memory_free(JMemory *memory)
-{
-#ifdef _WIN32
-    if (VirtualFree(memory->base, 0, MEM_RELEASE) == 0)
-        return 0;
-#else
-    if (munmap(memory->base, memory->capacity) == -1)
-        return 0;
-#endif // _WIN32
-    return 1;
-}
-
-void json_object_init(JObject *object, JPair *pairs, JMemory *memory)
+void json_object_init(JObject *object, JPair *pairs)
 {
     object->pairs = pairs;
     object->pairs_count = 0;
-#if !defined(NDEBUG)
-    object->memory = memory;
-#else
-    (void)memory;
-#endif // NDEBUG
 }
 
 void json_object_add_pair(JObject *object, char *key, JValue value)
@@ -390,45 +240,18 @@ void json_object_add_pair(JObject *object, char *key, JValue value)
     object->pairs_count++;
 }
 
-JParser json_init(const char *input)
+JParser json_init(JMemory *memory, const char *input)
 {
     JParser parser;
-    parser.error.code = JSON_OK;
-    parser.memory.capacity = 0;
-    if (!json_memory_init(&parser.memory))
-    {
-        parser.error.code = JSON_MEMORY_ERROR;
-#if !defined(NDEBUG)
-        parser.error.message = (char *)malloc(ERROR_MESSAGE_SIZE);
-#ifdef _WIN32
-        sprintf(parser.error.message, "VirtualAlloc failed: %lu",
-                GetLastError());
-#else
-        sprintf(parser.error.message, "mmap failed: %s", strerror(errno));
-#endif // _WIN32
-#endif // NDEBUG
-        return parser;
-    }
+    parser.memory = memory;
     parser.pairs_total = 0;
     parser.pairs_commited = 0;
     parser.input = input;
     for (jsize_t i = 0; input[i] != 0; ++i)
         if (input[i] == ':' && input[i - 1] == '"' && input[i - 2] != '\\')
             parser.pairs_total++;
-#ifdef _WIN32
-    if (json_memory_alloc(&parser.memory, sizeof(JPair) * parser.pairs_total) ==
-        0)
-    {
-        parser.error.code = JSON_MEMORY_ERROR;
-#if !defined(NDEBUG)
-        parser.error.message = (char *)malloc(ERROR_MESSAGE_SIZE);
-        sprintf(parser.error.message, "VirtualAlloc failed: %lu",
-                GetLastError());
-#endif // NDEBUG
-    }
-#else
-    json_memory_alloc(&parser.memory, sizeof(JPair) * parser.pairs_total);
-#endif // _WIN32
+    memory->alloc(parser.memory->struct_ptr,
+                  sizeof(JPair) * parser.pairs_total);
     return parser;
 }
 
@@ -439,13 +262,9 @@ JValue json_get(JObject *object, const char *key)
             return object->pairs[i].value;
     JValue value;
     value.type = JSON_ERROR;
-    value.error.code = JSON_KEY_NOT_FOUND;
+    value.error = JSON_KEY_NOT_FOUND;
 #if !defined(NDEBUG)
-    value.error.message =
-        (char *)json_memory_alloc(object->memory, ERROR_MESSAGE_SIZE);
-    sprintf(value.error.message, "key \"%s\" was not found", key);
-#else
-    value.error.message = 0;
+    fprintf(stderr, "key \"%s\" was not found", key);
 #endif // NDEBUG
     return value;
 }
@@ -470,23 +289,15 @@ JValue json_parse_string(JParser *parser, jsize_t *pos)
     if (*pos - start != 0)
     {
         jsize_t string_size = *pos - start + 1;
-        value_string = (char *)json_memory_alloc(&parser->memory, string_size);
-#ifdef _WIN32
+        value_string = (char *)parser->memory->alloc(parser->memory->struct_ptr,
+                                                     string_size);
         if (value_string == 0)
         {
             JValue value;
             value.type = JSON_ERROR;
-            value.error.code = JSON_MEMORY_ERROR;
-#if !defined(NDEBUG)
-            value.error.message = (char *)malloc(ERROR_MESSAGE_SIZE);
-            sprintf(value.error.message, "VirtualAlloc failed: %lu",
-                    GetLastError());
-#else
-            value.error.message = 0;
-#endif // NDEBUG
+            value.error = JSON_MEMORY_ERROR;
             return value;
         }
-#endif // _WIN32
         json_memcpy(value_string, parser->input + start, string_size - 1);
         value_string[string_size - 1] = '\0';
     }
@@ -520,14 +331,10 @@ JValue json_parse_number(JParser *parser, jsize_t *pos, int negative)
         {
             JValue value;
             value.type = JSON_ERROR;
-            value.error.code = JSON_PARSE_ERROR;
+            value.error = JSON_PARSE_ERROR;
 #if !defined(NDEBUG)
-            value.error.message =
-                (char *)json_memory_alloc(&parser->memory, ERROR_MESSAGE_SIZE);
-            sprintf(value.error.message, "couldn't parse a number at %llu",
+            fprintf(stderr, "couldn't parse a number at %llu",
                     start_pos + i + 1);
-#else
-            value.error.message = 0;
 #endif // NDEBUG
             return value;
         }
@@ -555,13 +362,9 @@ JValue json_parse_boolean(JParser *parser, jsize_t *pos, int bool_value,
     }
     JValue value;
     value.type = JSON_ERROR;
-    value.error.code = JSON_PARSE_ERROR;
+    value.error = JSON_PARSE_ERROR;
 #if !defined(NDEBUG)
-    value.error.message =
-        (char *)json_memory_alloc(&parser->memory, ERROR_MESSAGE_SIZE);
-    sprintf(value.error.message, "failed to parse %s", bool_string);
-#else
-    value.error.message = 0;
+    fprintf(stderr, "failed to parse %s", bool_string);
 #endif // NDEBUG
     return value;
 }
@@ -578,13 +381,9 @@ JValue json_parse_null(JParser *parser, jsize_t *pos)
     }
     JValue value;
     value.type = JSON_ERROR;
-    value.error.code = JSON_PARSE_ERROR;
+    value.error = JSON_PARSE_ERROR;
 #if !defined(NDEBUG)
-    value.error.message =
-        (char *)json_memory_alloc(&parser->memory, ERROR_MESSAGE_SIZE);
-    memcpy(value.error.message, "failed to parse null", 21);
-#else
-    value.error.message = 0;
+    fprintf(stderr, "failed to parse null");
 #endif // NDEBUG
     return value;
 }
@@ -614,24 +413,15 @@ JValue json_parse_array(JParser *parser, jsize_t *pos)
         if (!inside_string && parser->input[start_pos] == ',')
             array_values_count++;
     } while (parser->input[++start_pos] != ']');
-    JValue *array_values = (JValue *)json_memory_alloc(
-        &parser->memory, sizeof(JValue) * array_values_count);
-#ifdef _WIN32
+    JValue *array_values = (JValue *)parser->memory->alloc(
+        parser->memory->struct_ptr, sizeof(JValue) * array_values_count);
     if (array_values == 0)
     {
         JValue value;
         value.type = JSON_ERROR;
-        value.error.code = JSON_MEMORY_ERROR;
-#if !defined(NDEBUG)
-        value.error.message = (char *)malloc(ERROR_MESSAGE_SIZE);
-        sprintf(value.error.message, "VirtualAlloc failed: %lu",
-                GetLastError());
-#else
-        value.error.message = 0;
-#endif // NDEBUG
+        value.error = JSON_MEMORY_ERROR;
         return value;
     }
-#endif // _WIN32
     for (jsize_t i = 0; i < array_values_count; ++i)
     {
         array_values[i] = json_parse_value(parser, pos);
@@ -676,14 +466,9 @@ JValue json_parse_value(JParser *parser, jsize_t *pos)
     {
         JValue value;
         value.type = JSON_ERROR;
-        value.error.code = JSON_PARSE_ERROR;
+        value.error = JSON_PARSE_ERROR;
 #if !defined(NDEBUG)
-        value.error.message =
-            (char *)json_memory_alloc(&parser->memory, ERROR_MESSAGE_SIZE);
-        sprintf(value.error.message, "unknown char %c at %llu",
-                parser->input[*pos], *pos);
-#else
-        value.error.message = 0;
+        fprintf(stderr, "unknown char %c at %llu", parser->input[*pos], *pos);
 #endif // NDEBUG
         return value;
     }
@@ -699,23 +484,19 @@ JValue json_parse_object(JParser *parser, jsize_t *pos)
     {
         JValue value;
         value.type = JSON_ERROR;
-        value.error.code = JSON_PARSE_ERROR;
+        value.error = JSON_PARSE_ERROR;
 #if !defined(NDEBUG)
-        value.error.message =
-            (char *)json_memory_alloc(&parser->memory, ERROR_MESSAGE_SIZE);
-        sprintf(value.error.message, "expected '%c' found '%c' at %llu", '{',
+        fprintf(stderr, "expected '%c' found '%c' at %llu", '{',
                 parser->input[*pos - 1], *pos - 1);
-#else
-        value.error.message = 0;
 #endif // NDEBUG
         return value;
     }
 
     JPair *pairs_start =
-        (JPair *)(parser->memory.base + sizeof(JPair) * parser->pairs_commited);
+        (JPair *)(parser->memory->base + sizeof(JPair) * parser->pairs_commited);
     JValue object;
     object.type = JSON_OBJECT;
-    json_object_init(&object.object, pairs_start, &parser->memory);
+    json_object_init(&object.object, pairs_start);
 
     jsize_t i = *pos;
     do
@@ -753,14 +534,10 @@ parse_pair:
         {
             JValue value;
             value.type = JSON_ERROR;
-            value.error.code = JSON_PARSE_ERROR;
+            value.error = JSON_PARSE_ERROR;
 #if !defined(NDEBUG)
-            value.error.message =
-                (char *)json_memory_alloc(&parser->memory, ERROR_MESSAGE_SIZE);
-            sprintf(value.error.message, "expected '%c' found '%c' at %llu",
-                    '"', parser->input[*pos - 1], *pos - 1);
-#else
-            value.error.message = 0;
+            fprintf(stderr, "expected '%c' found '%c' at %llu", '"',
+                    parser->input[*pos - 1], *pos - 1);
 #endif // NDEBUG
             return value;
         }
@@ -777,14 +554,10 @@ parse_pair:
         {
             JValue value;
             value.type = JSON_ERROR;
-            value.error.code = JSON_PARSE_ERROR;
+            value.error = JSON_PARSE_ERROR;
 #if !defined(NDEBUG)
-            value.error.message =
-                (char *)json_memory_alloc(&parser->memory, ERROR_MESSAGE_SIZE);
-            sprintf(value.error.message, "expected '%c' found '%c' at %llu",
-                    ':', parser->input[*pos - 1], *pos - 1);
-#else
-            value.error.message = 0;
+            fprintf(stderr, "expected '%c' found '%c' at %llu", ':',
+                    parser->input[*pos - 1], *pos - 1);
 #endif // NDEBUG
             return value;
         }

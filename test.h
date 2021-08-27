@@ -1,13 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define VALUE_ERROR(value)                                                     \
-    do                                                                         \
-    {                                                                          \
-        printf("error: %s\n", value.error.message);                            \
-        exit(1);                                                               \
-    } while (0)
-
 char *read_file_as_str(const char *path)
 {
     FILE *f = fopen(path, "rb");
