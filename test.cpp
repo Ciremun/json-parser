@@ -6,11 +6,6 @@
 
 #include "test.h"
 
-// void *custom_malloc(void *struct_ptr, unsigned long long int size)
-// {
-//     return malloc(size);
-// }
-
 int main()
 {
     char *input = read_file_as_str("input.json");
@@ -19,15 +14,31 @@ int main()
     if (memory == 0)
         exit(1);
 
-    // custom alloc
+    // void *custom_malloc(void *struct_ptr, unsigned long long int size)
+    // {
+    //     return malloc(size);
+    // }
     //
-    // JMemory memory;
-    // memory.alloc = custom_malloc;
+    // JMemory memory = {.base = (char *)malloc(1024), .alloc = custom_malloc, .struct_ptr = 0};
     //
-    // pairs memory
-    // memory.base = (char *)malloc(1024);
+    // or
     //
-    // memory.struct_ptr = 0;
+    // typedef struct
+    // {
+    //     char *base;
+    //     char *start;
+    // } Memory;
+    //
+    // void *custom_alloc(void *struct_ptr, unsigned long long int size)
+    // {
+    //     Memory *memory = (Memory *)struct_ptr;
+    //     memory->start += size;
+    //     return memory->start - size;
+    // }
+    //
+    // char mem[4096];
+    // Memory custom = {.base = mem, .start = custom.base};
+    // JMemory memory = {.base = custom.base, .alloc = custom_alloc, .struct_ptr = &custom};
 
     JParser parser = json_init(memory, input);
 
