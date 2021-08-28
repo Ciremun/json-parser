@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #endif // NDEBUG
 
-// TODO(#20): macOS CI
 // TODO(#18): NDEBUG test
 // TODO(#19): custom allocator test
 // TODO(#17): docs
