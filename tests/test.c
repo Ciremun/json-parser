@@ -12,6 +12,7 @@
 #include <assert.h>
 #include <string.h>
 
+// TODO(#28): non-zero exit code if error occurred
 // TODO(#25): TEST macro
 
 size_t total_errors;
