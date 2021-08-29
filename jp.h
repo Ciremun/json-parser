@@ -8,7 +8,7 @@
 
 // TODO(#21): utf8
 // TODO(#22): hex
-// TODO: escapes
+// TODO(#23): escapes
 // TODO(#17): examples
 // TODO(#14): tests
 #if !defined(NDEBUG)
