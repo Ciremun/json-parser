@@ -17,7 +17,7 @@
         JValue value;                                                          \
         value.type = JSON_ERROR;                                               \
         value.error = JSON_UNEXPECTED_EOF;                                     \
-        fprintf(stderr, "unexpected end of file at %llu", pos);                \
+        fprintf(stderr, "unexpected end of file at %llu\n", pos);              \
         return value;                                                          \
     } while (0)
 #else
@@ -135,7 +135,7 @@ JValue JValue::operator[](const char *key)
         value.type = JSON_ERROR;
         value.error = JSON_TYPE_ERROR;
 #if !defined(NDEBUG)
-        fprintf(stderr, "value is not an object at '%s'", key);
+        fprintf(stderr, "value is not an object at '%s'\n", key);
 #endif // NDEBUG
         return value;
     }
@@ -149,7 +149,7 @@ JValue JValue::operator[](jsize_t idx)
         value.type = JSON_ERROR;
         value.error = JSON_TYPE_ERROR;
 #if !defined(NDEBUG)
-        fprintf(stderr, "value is not an array at [%llu]", idx);
+        fprintf(stderr, "value is not an array at [%llu]\n", idx);
 #endif // NDEBUG
         return value;
     }
@@ -173,10 +173,9 @@ int json_match_char(char c, const char *input, jsize_t *pos)
         if (input[*pos] == '\0')
             return JSON_UNEXPECTED_EOF;
     } while (json_whitespace_char(input[(*pos)++]));
-    int match = input[*pos - 1] == c;
-    if (!match)
+    if (input[*pos - 1] != c)
         return JSON_PARSE_ERROR;
-    return match;
+    return 1;
 }
 
 int json_skip_whitespaces(const char *input, jsize_t *pos)
@@ -261,7 +260,7 @@ JValue json_get(JObject *object, const char *key)
     value.type = JSON_ERROR;
     value.error = JSON_KEY_NOT_FOUND;
 #if !defined(NDEBUG)
-    fprintf(stderr, "key \"%s\" was not found", key);
+    fprintf(stderr, "key \"%s\" was not found\n", key);
 #endif // NDEBUG
     return value;
 }
@@ -330,7 +329,7 @@ JValue json_parse_number(JParser *parser, jsize_t *pos, int negative)
             value.type = JSON_ERROR;
             value.error = JSON_PARSE_ERROR;
 #if !defined(NDEBUG)
-            fprintf(stderr, "couldn't parse a number at %llu",
+            fprintf(stderr, "couldn't parse a number at %llu\n",
                     start_pos + i + 1);
 #endif // NDEBUG
             return value;
@@ -361,7 +360,7 @@ JValue json_parse_boolean(JParser *parser, jsize_t *pos, int bool_value,
     value.type = JSON_ERROR;
     value.error = JSON_PARSE_ERROR;
 #if !defined(NDEBUG)
-    fprintf(stderr, "failed to parse %s", bool_string);
+    fprintf(stderr, "failed to parse %s\n", bool_string);
 #endif // NDEBUG
     return value;
 }
@@ -380,7 +379,7 @@ JValue json_parse_null(JParser *parser, jsize_t *pos)
     value.type = JSON_ERROR;
     value.error = JSON_PARSE_ERROR;
 #if !defined(NDEBUG)
-    fprintf(stderr, "failed to parse null");
+    fprintf(stderr, "failed to parse null\n");
 #endif // NDEBUG
     return value;
 }
@@ -465,7 +464,7 @@ JValue json_parse_value(JParser *parser, jsize_t *pos)
         value.type = JSON_ERROR;
         value.error = JSON_PARSE_ERROR;
 #if !defined(NDEBUG)
-        fprintf(stderr, "unknown char %c at %llu", parser->input[*pos], *pos);
+        fprintf(stderr, "unknown char %c at %llu\n", parser->input[*pos], *pos);
 #endif // NDEBUG
         return value;
     }
@@ -483,7 +482,7 @@ JValue json_parse_object(JParser *parser, jsize_t *pos)
         value.type = JSON_ERROR;
         value.error = JSON_PARSE_ERROR;
 #if !defined(NDEBUG)
-        fprintf(stderr, "expected '%c' found '%c' at %llu", '{',
+        fprintf(stderr, "expected '%c' found '%c' at %llu\n", '{',
                 parser->input[*pos - 1], *pos - 1);
 #endif // NDEBUG
         return value;
@@ -533,7 +532,7 @@ parse_pair:
             value.type = JSON_ERROR;
             value.error = JSON_PARSE_ERROR;
 #if !defined(NDEBUG)
-            fprintf(stderr, "expected '%c' found '%c' at %llu", '"',
+            fprintf(stderr, "expected '%c' found '%c' at %llu\n", '"',
                     parser->input[*pos - 1], *pos - 1);
 #endif // NDEBUG
             return value;
@@ -553,7 +552,7 @@ parse_pair:
             value.type = JSON_ERROR;
             value.error = JSON_PARSE_ERROR;
 #if !defined(NDEBUG)
-            fprintf(stderr, "expected '%c' found '%c' at %llu", ':',
+            fprintf(stderr, "expected '%c' found '%c' at %llu\n", ':',
                     parser->input[*pos - 1], *pos - 1);
 #endif // NDEBUG
             return value;
@@ -574,8 +573,22 @@ parse_pair:
         goto parse_pair;
     }
 }
-    if (json_match_char('}', parser->input, pos) == JSON_UNEXPECTED_EOF)
-        UNEXPECTED_EOF(*pos);
+    {
+        int match = json_match_char('}', parser->input, pos);
+        if (match == JSON_UNEXPECTED_EOF)
+            UNEXPECTED_EOF(*pos);
+        if (match == JSON_PARSE_ERROR)
+        {
+            JValue value;
+            value.type = JSON_ERROR;
+            value.error = JSON_PARSE_ERROR;
+#if !defined(NDEBUG)
+            fprintf(stderr, "expected '%c' found '%c' at %llu\n", '}',
+                    parser->input[*pos - 1], *pos - 1);
+#endif // NDEBUG
+            return value;
+        }
+    }
     return object;
 }
 
