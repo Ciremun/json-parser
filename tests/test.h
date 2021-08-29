@@ -1,6 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define COUNT(a) (sizeof(a) / sizeof(*a))
+
+extern size_t total_errors;
+
+typedef struct
+{
+    char *start;
+    size_t length;
+} String;
+
 char *read_file_as_str(const char *path)
 {
     FILE *f = fopen(path, "rb");
@@ -12,4 +22,13 @@ char *read_file_as_str(const char *path)
     str[size] = '\0';
     fclose(f);
     return str;
+}
+
+void test(int cond, const char *test)
+{
+    if (!cond)
+    {
+        total_errors++;
+        fprintf(stdout, "  %s - fail\n", test);
+    }
 }

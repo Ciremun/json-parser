@@ -400,16 +400,22 @@ JValue json_parse_array(JParser *parser, jsize_t *pos)
         return value;
     }
     jsize_t array_values_count = 1;
+    jsize_t open_bracket_count = 1;
     int inside_string = 0;
     do
     {
         if (parser->input[start_pos] == '\0')
             UNEXPECTED_EOF(start_pos);
+        if (parser->input[start_pos] == '[')
+            open_bracket_count++;
+        if (parser->input[start_pos] == ']')
+            open_bracket_count--;
         if (parser->input[start_pos] == '"')
             inside_string = !inside_string;
         if (!inside_string && parser->input[start_pos] == ',')
             array_values_count++;
-    } while (parser->input[++start_pos] != ']');
+        start_pos++;
+    } while (open_bracket_count != 0);
     JValue *array_values = (JValue *)parser->memory->alloc(
         parser->memory->struct_ptr, sizeof(JValue) * array_values_count);
     if (array_values == 0)
@@ -427,6 +433,7 @@ JValue json_parse_array(JParser *parser, jsize_t *pos)
             UNEXPECTED_EOF(*pos);
     }
     value.array = array_values;
+    // (*pos)++;
     return value;
 }
 
@@ -502,7 +509,7 @@ JValue json_parse_object(JParser *parser, jsize_t *pos)
             UNEXPECTED_EOF(i);
         if (parser->input[i] == '{')
         {
-            jsize_t open_curly_count = 2;
+            jsize_t open_curly_count = 1;
             do
             {
                 i++;
@@ -512,14 +519,13 @@ JValue json_parse_object(JParser *parser, jsize_t *pos)
                     open_curly_count++;
                 if (parser->input[i] == '}')
                     open_curly_count--;
-            } while (open_curly_count != 1);
+            } while (open_curly_count != 0);
             i++;
         }
         if (parser->input[i] == ':' && parser->input[i - 1] == '"' &&
             parser->input[i - 2] != '\\')
             parser->pairs_commited++;
-        i++;
-    } while (parser->input[i] != '}');
+    } while (parser->input[i++] != '}');
 
 parse_pair:
 {
@@ -529,6 +535,11 @@ parse_pair:
             UNEXPECTED_EOF(*pos);
         if (match == JSON_PARSE_ERROR)
         {
+            if (parser->input[*pos - 1] == '}')
+            {
+                object.object.pairs = 0;
+                return object;
+            }
             JValue value;
             value.type = JSON_ERROR;
             value.error = JSON_PARSE_ERROR;
