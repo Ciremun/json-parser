@@ -12,6 +12,8 @@
 #include <assert.h>
 #include <string.h>
 
+// TODO(#25): TEST macro
+
 size_t total_errors;
 
 size_t write_to_string(const void *buffer, size_t size, size_t count, void *stream)
