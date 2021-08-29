@@ -7,7 +7,7 @@
 #endif // NDEBUG
 
 // TODO(#21): utf8
-// TODO: hex
+// TODO(#22): hex
 // TODO: escapes
 // TODO(#17): examples
 // TODO(#14): tests
