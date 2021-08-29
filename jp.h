@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #endif // NDEBUG
 
+// TODO(#27): parse "[...]"
 // TODO(#26): JValue array, string length
 // TODO(#21): utf8
 // TODO(#22): hex
