@@ -7,13 +7,21 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: build and run
-        run: g++ -Wall -Wextra -pedantic -std=c++11 test.cpp -otest && ./test
+        run: |
+          g++ -Wall -Wextra -pedantic -std=c++11 test.cpp -otest && ./test
+        env:
+          CC: gcc
+          CXX: g++
   ubuntu-clang-cpp:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: build and run
-        run: clang -Wall -Wextra -pedantic -std=c++11 test.cpp -otest && ./test
+        run: |
+          clang -Wall -Wextra -pedantic -std=c++11 test.cpp -otest && ./test
+        env:
+          CC: clang
+          CXX: clang
   macos-clang-cpp:
     runs-on: macos-latest
     steps:
@@ -22,7 +30,8 @@ jobs:
         run: |
           clang -Wall -Wextra -pedantic -std=c++11 test.cpp -otest && ./test
         env:
-          CXX: clang++
+          CC: clang
+          CXX: clang
   windows-msvc-cpp:
     runs-on: windows-latest
     steps:
@@ -31,7 +40,7 @@ jobs:
       - name: build and run
         shell: cmd
         run: |
-          cl.exe /nologo /W3 /std:c++11 test.cpp /Fe:test && test.exe
+          cl nobuild.c && nobuild.exe
   windows-gcc-cpp:
     runs-on: windows-latest
     strategy:
@@ -54,9 +63,10 @@ jobs:
           msys2 -c 'pacman --noconfirm -Suu'
       - name: build and run
         run: |
-          g++ -Wall -Wextra -pedantic -std=c++11 test.cpp -otest && test.exe
+          gcc nobuild.c -onobuild && nobuild.exe
         shell: cmd
         env:
+          CC: gcc
           CXX: g++
           PATH: D:\a\_temp\msys\msys64\usr\bin;D:\a\_temp\msys\msys64\${{ matrix.msystem_lower }}\bin;D:\a\_temp\msys
   windows-clang-cpp:
@@ -81,9 +91,10 @@ jobs:
           msys2 -c 'pacman --noconfirm -Suu'
       - name: build and run
         run: |
-          clang -Wall -Wextra -pedantic -std=c++11 test.cpp -otest && test.exe
+          clang nobuild.c -onobuild && nobuild.exe
         shell: cmd
         env:
+          CC: clang
           CXX: clang
           PATH: D:\a\_temp\msys\msys64\usr\bin;D:\a\_temp\msys\msys64\${{ matrix.msystem_lower }}\bin;D:\a\_temp\msys
   ubuntu-gcc-c:
@@ -91,22 +102,31 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: build and run
-        run: gcc -Wall -Wextra -pedantic -std=c11 test.c -otest && ./test
+        run: |
+          cc nobuild.c -onobuild && ./nobuild
+        env:
+          CC: gcc
+          CXX: g++
   ubuntu-clang-c:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: build and run
-        run: clang -Wall -Wextra -pedantic -std=c11 test.c -otest && ./test
+        run: |
+          cc nobuild.c -onobuild && ./nobuild
+        env:
+          CC: clang
+          CXX: clang
   macos-clang-c:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
       - name: build and run
         run: |
-          clang -Wall -Wextra -pedantic -std=c11 test.c -otest && ./test
+          cc nobuild.c -onobuild && ./nobuild
         env:
           CC: clang
+          CXX: clang
   windows-msvc-c:
     runs-on: windows-latest
     steps:
@@ -115,7 +135,7 @@ jobs:
       - name: build and run
         shell: cmd
         run: |
-          cl.exe /nologo /W3 /std:c11 test.c /Fe:test && test.exe
+          cl nobuild.c && nobuild.exe
   windows-gcc-c:
     runs-on: windows-latest
     strategy:
@@ -138,10 +158,11 @@ jobs:
           msys2 -c 'pacman --noconfirm -Suu'
       - name: build and run
         run: |
-          gcc -Wall -Wextra -pedantic -std=c11 test.c -otest && test.exe
+          gcc nobuild.c -onobuild && nobuild.exe
         shell: cmd
         env:
           CC: gcc
+          CXX: g++
           PATH: D:\a\_temp\msys\msys64\usr\bin;D:\a\_temp\msys\msys64\${{ matrix.msystem_lower }}\bin;D:\a\_temp\msys
   windows-clang-c:
     runs-on: windows-latest
@@ -165,8 +186,9 @@ jobs:
           msys2 -c 'pacman --noconfirm -Suu'
       - name: build and run
         run: |
-          clang -Wall -Wextra -pedantic -std=c11 test.c -otest && test.exe
+          clang nobuild.c -onobuild && nobuild.exe
         shell: cmd
         env:
+          CC: clang
           CXX: clang
           PATH: D:\a\_temp\msys\msys64\usr\bin;D:\a\_temp\msys\msys64\${{ matrix.msystem_lower }}\bin;D:\a\_temp\msys
