@@ -6,9 +6,10 @@
 #include <stdlib.h>
 #endif // NDEBUG
 
-// TODO(#18): NDEBUG test
-// TODO(#19): custom allocator test
-// TODO(#17): docs
+// TODO(#21): utf8
+// TODO: hex
+// TODO: escapes
+// TODO(#17): examples
 // TODO(#14): tests
 #if !defined(NDEBUG)
 #define UNEXPECTED_EOF(pos)                                                    \
