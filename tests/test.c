@@ -1,10 +1,10 @@
-#include "test.h"
-
-#define JP_IMPLEMENTATION
-#include "../jp.h"
+#define NDEBUG
 
 #define JMEM_IMPLEMENTATION
 #include "../jmem.h"
+
+#define JP_IMPLEMENTATION
+#include "../jp.h"
 
 #define JIM_IMPLEMENTATION
 #include "jim.h"
@@ -12,10 +12,14 @@
 #include <assert.h>
 #include <string.h>
 
+#include "test.h"
+
 size_t total_errors;
 
 void *returns_null(void *struct_ptr, unsigned long long int size)
 {
+    (void)struct_ptr;
+    (void)size;
     return 0;
 }
 
