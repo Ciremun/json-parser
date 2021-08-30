@@ -2,7 +2,7 @@ name: CI
 on: [push, pull_request, workflow_dispatch]
 
 jobs:
-  ubuntu-gcc-cpp:
+  ubuntu-gcc:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -12,7 +12,7 @@ jobs:
         env:
           CC: gcc
           CXX: g++
-  ubuntu-clang-cpp:
+  ubuntu-clang:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -22,7 +22,7 @@ jobs:
         env:
           CC: clang
           CXX: clang
-  macos-clang-cpp:
+  macos-clang:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
@@ -32,7 +32,7 @@ jobs:
         env:
           CC: clang
           CXX: clang
-  windows-msvc-cpp:
+  windows-msvc:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
@@ -41,7 +41,7 @@ jobs:
         shell: cmd
         run: |
           cl nobuild.c && nobuild.exe
-  windows-gcc-cpp:
+  windows-gcc:
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -69,7 +69,7 @@ jobs:
           CC: gcc
           CXX: g++
           PATH: D:\a\_temp\msys\msys64\usr\bin;D:\a\_temp\msys\msys64\${{ matrix.msystem_lower }}\bin;D:\a\_temp\msys
-  windows-clang-cpp:
+  windows-clang:
     runs-on: windows-latest
     strategy:
       fail-fast: false
