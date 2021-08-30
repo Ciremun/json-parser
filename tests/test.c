@@ -217,9 +217,30 @@ void test_errors(void)
     jmem_free(memory);
 }
 
+void test_single_array(void)
+{
+    const char* input = "[69]";
+
+    JMemory *memory = jmem_init();
+    TEST(memory != 0);
+
+    JParser parser = json_init(memory, input);
+
+    JValue array = json_parse(&parser);
+    if (TEST(array.type == JSON_ARRAY))
+    {
+        JValue array_number = array.array[0];
+        if (TEST(array_number.type == JSON_NUMBER))
+            TEST(array_number.number == 69);
+    }
+
+    jmem_free(memory);
+}
+
 Test tests[] = {
     { .name = "values", .f = test_values },
     { .name = "errors", .f = test_errors },
+    { .name = "single array", .f = test_single_array },
 };
 
 int main(void)

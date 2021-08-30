@@ -271,7 +271,24 @@ JValue json_get(JObject *object, const char *key)
 JValue json_parse(JParser *parser)
 {
     jsize_t pos = 0;
-    return json_parse_object(parser, &pos);
+    json_skip_whitespaces(parser->input, &pos);
+    switch (parser->input[pos])
+    {
+    case '{':
+        return json_parse_object(parser, &pos);
+    case '[':
+        return json_parse_array(parser, &pos);
+    default:
+    {
+        JValue value;
+        value.type = JSON_ERROR;
+        value.error = JSON_PARSE_ERROR;
+#if !defined(NDEBUG)
+        fprintf(stderr, "unknown char %c at %llu\n", parser->input[pos], pos);
+#endif // NDEBUG
+        return value;
+    }
+    }
 }
 
 JValue json_parse_string(JParser *parser, jsize_t *pos)
@@ -433,9 +450,9 @@ JValue json_parse_array(JParser *parser, jsize_t *pos)
         if (value.type == JSON_ERROR)
             return value;
         array_values[i] = value;
-        (*pos)++;
         if (!json_skip_whitespaces(parser->input, pos))
             UNEXPECTED_EOF(*pos);
+        (*pos)++;
     }
     value.array = array_values;
     // (*pos)++;
