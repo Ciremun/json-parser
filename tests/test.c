@@ -1,10 +1,10 @@
 #include "test.h"
 
-#define JMEM_IMPLEMENTATION
-#include "../jmem.h"
-
 #define JP_IMPLEMENTATION
 #include "../jp.h"
+
+#define JMEM_IMPLEMENTATION
+#include "../jmem.h"
 
 #define JIM_IMPLEMENTATION
 #include "jim.h"
