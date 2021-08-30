@@ -1,3 +1,5 @@
+#define NDEBUG
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -12,6 +14,12 @@ typedef struct
     size_t length;
 } String;
 
+typedef struct
+{
+    const char *name;
+    void (*f)(void);
+} Test;
+
 char *read_file_as_str(const char *path)
 {
     FILE *f = fopen(path, "rb");
@@ -25,11 +33,12 @@ char *read_file_as_str(const char *path)
     return str;
 }
 
-void test(int cond, const char *test)
+int test(int cond, const char *test)
 {
     if (!cond)
     {
         total_errors++;
         fprintf(stdout, "%s FAILED\n", test);
     }
+    return cond;
 }

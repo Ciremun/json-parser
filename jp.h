@@ -429,7 +429,10 @@ JValue json_parse_array(JParser *parser, jsize_t *pos)
     }
     for (jsize_t i = 0; i < array_values_count; ++i)
     {
-        array_values[i] = json_parse_value(parser, pos);
+        JValue value = json_parse_value(parser, pos);
+        if (value.type == JSON_ERROR)
+            return value;
+        array_values[i] = value;
         (*pos)++;
         if (!json_skip_whitespaces(parser->input, pos))
             UNEXPECTED_EOF(*pos);
@@ -576,6 +579,8 @@ parse_pair:
         UNEXPECTED_EOF(*pos);
 
     JValue value = json_parse_value(parser, pos);
+    if (value.type == JSON_ERROR)
+        return value;
 
     json_object_add_pair(&object.object, key, value);
     if (!json_skip_whitespaces(parser->input, pos))
