@@ -80,7 +80,7 @@ void test_values(void)
     JParser parser = json_init(memory, buffer);
 
     JValue json = json_parse(&parser);
-    TEST(json.type != JSON_ERROR);
+    TEST(json.type == JSON_OBJECT);
 
     JValue number = json_get(&json.object, "number");
     TEST(number.type == JSON_NUMBER);
@@ -104,9 +104,63 @@ void test_values(void)
 
     JValue array = json_get(&json.object, "array");
     TEST(array.type == JSON_ARRAY);
+
     JValue array_number = array.array[0];
     TEST(array_number.type == JSON_NUMBER);
     TEST(array_number.number == 69);
+
+    JValue array_string = array.array[1];
+    TEST(array_string.type == JSON_STRING);
+    TEST(strcmp(array_string.string, "another test string") == 0);
+
+    JValue array_boolean = array.array[2];
+    TEST(array_boolean.type == JSON_BOOL);
+    TEST(!array_boolean.boolean);
+
+    JValue array_null= array.array[3];
+    TEST(array_null.type == JSON_NULL);
+    TEST(array_null.null == 0);
+
+    JValue array_array = array.array[4];
+    TEST(array_array.type == JSON_ARRAY);
+    JValue array_array_string = array_array.array[0];
+    TEST(array_array_string.type == JSON_STRING);
+    TEST(strcmp(array_array_string.string, "yet another test string") == 0);
+
+    JValue array_object = array.array[5];
+    TEST(array_object.type == JSON_OBJECT);
+
+    JValue array_object_array = json_get(&array_object.object, "test");
+    TEST(array_object_array.type == JSON_ARRAY);
+
+    JValue array_object_array_object = array_object_array.array[0];
+    TEST(array_object_array_object.type == JSON_OBJECT);
+    
+    JValue array_object_array_object_string = json_get(&array_object_array_object.object, "nested");
+    TEST(array_object_array_object_string.type == JSON_STRING);
+    TEST(strcmp(array_object_array_object_string.string, "nested string") == 0);
+
+    JValue nested_array_object = array.array[6];
+    TEST(nested_array_object.type == JSON_OBJECT);
+
+    JValue nested_array_object_number = json_get(&nested_array_object.object, "nested_array_object");
+    TEST(nested_array_object_number.type == JSON_NUMBER);
+    TEST(nested_array_object_number.number == 69);
+
+    JValue empty_array = json_get(&json.object, "empty_array");
+    TEST(empty_array.type == JSON_ARRAY);
+    TEST(empty_array.array == 0);
+
+    JValue empty_object = json_get(&json.object, "empty_object");
+    TEST(empty_object.type == JSON_OBJECT);
+    TEST(empty_object.object.pairs == 0);
+
+    JValue object = json_get(&json.object, "object");
+    TEST(object.type == JSON_OBJECT);
+    
+    JValue array_object_string = json_get(&object.object, "array_object");
+    TEST(array_object_string.type == JSON_STRING);
+    TEST(strcmp(array_object_string.string, "array object string") == 0);
 
     jmem_free(memory);
 }
