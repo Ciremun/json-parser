@@ -455,7 +455,6 @@ JValue json_parse_array(JParser *parser, jsize_t *pos)
         (*pos)++;
     }
     value.array = array_values;
-    // (*pos)++;
     return value;
 }
 

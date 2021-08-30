@@ -2,6 +2,7 @@
 *.old
 *.exe
 *.obj
+input.json
 jp
 nobuild
 test
