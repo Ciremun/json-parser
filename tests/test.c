@@ -204,6 +204,8 @@ void test_errors(void)
     const char* input_2 = "{\"key\":69}";
 
     memory = jmem_init();
+    TEST(memory != 0);
+
     parser = json_init(memory, input_2);
     json = json_parse(&parser);
     TEST(json.type == JSON_OBJECT);
