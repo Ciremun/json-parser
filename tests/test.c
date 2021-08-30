@@ -12,7 +12,6 @@
 #include <assert.h>
 #include <string.h>
 
-// TODO(#28): non-zero exit code if error occurred
 // TODO(#25): TEST macro
 
 size_t total_errors;
@@ -125,9 +124,13 @@ int main(void)
         tests[i]();
 
     if (total_errors == 0)
+    {
         fprintf(stdout, "all tests passed\n");
+        return 0;
+    }
     else
+    {
         fprintf(stdout, "total errors: %zu\n", total_errors);
-
-    return 0;
+        return 1;
+    }
 }
