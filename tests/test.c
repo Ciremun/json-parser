@@ -12,8 +12,6 @@
 #include <assert.h>
 #include <string.h>
 
-// TODO(#25): TEST macro
-
 size_t total_errors;
 
 size_t write_to_string(const void *buffer, size_t size, size_t count, void *stream)
@@ -77,38 +75,38 @@ void test_values(void)
     jim_object_end(&jim);
 
     JMemory *memory = jmem_init();
-    test(memory != 0, "memory != 0");
+    TEST(memory != 0);
 
     JParser parser = json_init(memory, buffer);
 
     JValue json = json_parse(&parser);
-    test(json.type != JSON_ERROR, "json.type != JSON_ERROR");
+    TEST(json.type != JSON_ERROR);
 
     JValue number = json_get(&json.object, "number");
-    test(number.type == JSON_NUMBER, "number.type == JSON_NUMBER");
-    test(number.number == 12345, "number.number == 12345");
+    TEST(number.type == JSON_NUMBER);
+    TEST(number.number == 12345);
 
     JValue empty_string = json_get(&json.object, "empty_string");
-    test(empty_string.type == JSON_STRING, "empty_string.type == JSON_STRING");
-    test(empty_string.string == 0, "empty_string.string == 0");
+    TEST(empty_string.type == JSON_STRING);
+    TEST(empty_string.string == 0);
 
     JValue string = json_get(&json.object, "string");
-    test(string.type == JSON_STRING, "string.type == JSON_STRING");
-    test(strcmp(string.string, "test string") == 0, "strcmp(string.string, \"test string\") == 0");
+    TEST(string.type == JSON_STRING);
+    TEST(strcmp(string.string, "test string") == 0);
 
     JValue boolean = json_get(&json.object, "bool");
-    test(boolean.type == JSON_BOOL, "boolean.type == JSON_BOOL");
-    test(boolean.boolean == 1, "boolean.boolean == 1");
+    TEST(boolean.type == JSON_BOOL);
+    TEST(boolean.boolean == 1);
 
     JValue null = json_get(&json.object, "null");
-    test(null.type == JSON_NULL, "null.type == JSON_NULL");
-    test(null.null == 0, "null.null == 0");
+    TEST(null.type == JSON_NULL);
+    TEST(null.null == 0);
 
     JValue array = json_get(&json.object, "array");
-    test(array.type == JSON_ARRAY, "array.type == JSON_ARRAY");
+    TEST(array.type == JSON_ARRAY);
     JValue array_number = array.array[0];
-    test(array_number.type == JSON_NUMBER, "array_number.type == JSON_NUMBER");
-    test(array_number.number == 69, "array_number == 69");
+    TEST(array_number.type == JSON_NUMBER);
+    TEST(array_number.number == 69);
 
     jmem_free(memory);
 }

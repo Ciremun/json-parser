@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #define COUNT(a) (sizeof(a) / sizeof(*a))
+#define TEST(cond) test(cond, #cond)
 
 extern size_t total_errors;
 
@@ -29,6 +30,6 @@ void test(int cond, const char *test)
     if (!cond)
     {
         total_errors++;
-        fprintf(stdout, "  %s - fail\n", test);
+        fprintf(stdout, "%s FAILED\n", test);
     }
 }
