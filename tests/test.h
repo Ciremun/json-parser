@@ -29,19 +29,6 @@ typedef struct
     void (*f)(void);
 } Test;
 
-char *read_file_as_str(const char *path)
-{
-    FILE *f = fopen(path, "rb");
-    fseek(f, 0, SEEK_END);
-    size_t size = ftell(f);
-    char *str = (char *)malloc(size + 1);
-    fseek(f, 0, SEEK_SET);
-    fread(str, 1, size, f);
-    str[size] = '\0';
-    fclose(f);
-    return str;
-}
-
 int test(int cond, const char *test)
 {
     if (!cond)
@@ -50,4 +37,19 @@ int test(int cond, const char *test)
         fprintf(stdout, "%s FAILED\n", test);
     }
     return cond;
+}
+
+char *read_file_as_str(const char *path)
+{
+    FILE *f = fopen(path, "rb");
+    if (!TEST(f != 0))
+        exit(1);
+    fseek(f, 0, SEEK_END);
+    size_t size = ftell(f);
+    char *str = (char *)malloc(size + 1);
+    fseek(f, 0, SEEK_SET);
+    fread(str, 1, size, f);
+    str[size] = '\0';
+    fclose(f);
+    return str;
 }
