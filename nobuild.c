@@ -12,11 +12,11 @@
 #ifdef _WIN32
 #define DEFAULT_CC "cl"
 #define DEFAULT_CXX "cl"
-#define RUN_TESTS(executable) CMD(".\\" executable ".exe")
+#define RUN(executable) CMD(".\\" executable ".exe")
 #else
 #define DEFAULT_CC "gcc"
 #define DEFAULT_CXX "g++"
-#define RUN_TESTS(executable) CMD("./" executable)
+#define RUN(executable) CMD("./" executable)
 #endif
 
 #define SET_COMPILER_EXECUTABLE(env_var, runtime_var, default_executable)      \
@@ -45,13 +45,28 @@ void run_tests()
         CMD(cxx, MSVC_CXXFLAGS, "tests/test.cpp", "/Fe:", "cxx-tests");
     else
         CMD(cxx, CXXFLAGS, "tests/test.cpp", "-o", "cxx-tests");
-    RUN_TESTS("c-tests");
-    RUN_TESTS("cxx-tests");
+    RUN("c-tests");
+    RUN("cxx-tests");
 }
 
 int main(int argc, char **argv)
 {
     GO_REBUILD_URSELF(argc, argv);
+
+    if (argc > 1)
+    {
+        if (strcmp(argv[1], "examples") == 0)
+        {
+            SET_COMPILER_EXECUTABLE("cc", cc, DEFAULT_CC);
+            if (strcmp(cc, "cl") == 0)
+                CMD(cc, MSVC_CFLAGS, "examples/twitch-payload.c", "/Fe:", "twitch-payload");
+            else
+                CMD(cc, CFLAGS, "examples/twitch-payload.c", "-o", "twitch-payload");
+            RUN("twitch-payload");
+            return 0;
+        }
+    }
+
     run_tests();
     return 0;
 }
