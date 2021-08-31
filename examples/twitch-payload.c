@@ -42,7 +42,10 @@ int main(void)
         if (id.type == JSON_NUMBER)
             printf("id.number: %lld\n", id.number);
         if (name.type == JSON_STRING)
+        {
             printf("name.string: %s\n", name.string);
+            printf("name.length: %llu\n", name.length);
+        }
         if (notifications.type == JSON_OBJECT)
         {
             JValue push = json_get(&notifications.object, "push");
