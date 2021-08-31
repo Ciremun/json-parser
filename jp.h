@@ -572,7 +572,12 @@ parse_pair:
     }
 
     (*pos)--;
-    char *key = json_parse_string(parser, pos).string;
+
+    JValue key_value = json_parse_string(parser, pos);
+    if (key_value.type == JSON_ERROR)
+        return key_value;
+
+    char *key = key_value.string;
 
     {
         int match = json_match_char(':', parser->input, pos);
