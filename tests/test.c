@@ -115,6 +115,8 @@ void test_values(void)
     JValue array = json_get(&json.object, "array");
     if (TEST(array.type == JSON_ARRAY))
     {
+        TEST(array.length == 7);
+
         JValue array_number = array.array[0];
         if (TEST(array_number.type == JSON_NUMBER))
             TEST(array_number.number == 69);
@@ -168,7 +170,10 @@ void test_values(void)
 
     JValue empty_array = json_get(&json.object, "empty_array");
     if (TEST(empty_array.type == JSON_ARRAY))
+    {
+        TEST(empty_array.length == 0);
         TEST(empty_array.array == 0);
+    }
 
     JValue empty_object = json_get(&json.object, "empty_object");
     if (TEST(empty_object.type == JSON_OBJECT))
@@ -179,9 +184,11 @@ void test_values(void)
     {
         JValue array_object_string = json_get(&object.object, "array_object");
         if (TEST(array_object_string.type == JSON_STRING))
+        {
+            TEST(array_object_string.length == 19);
             TEST(strcmp(array_object_string.string, "array object string") == 0);
+        }
     }
-    
 
     jmem_free(memory);
 }
@@ -258,7 +265,7 @@ Test tests[] = {
     { .name = "values", .f = test_values },
     { .name = "errors", .f = test_errors },
     { .name = "single array", .f = test_single_array },
-    { .name = "memory error", .f = test_memory_error }
+    { .name = "memory error", .f = test_memory_error },
 };
 
 int main(void)
