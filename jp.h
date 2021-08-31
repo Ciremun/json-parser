@@ -73,6 +73,7 @@ typedef struct
 struct JValue
 {
     JType type;
+    jsize_t length;
     union
     {
         long long number;
@@ -301,9 +302,10 @@ JValue json_parse_string(JParser *parser, jsize_t *pos)
         (*pos)++;
     }
     char *value_string = 0;
+    jsize_t string_size = 1;
     if (*pos - start != 0)
     {
-        jsize_t string_size = *pos - start + 1;
+        string_size = *pos - start + 1;
         value_string = (char *)parser->memory->alloc(parser->memory->struct_ptr,
                                                      string_size);
         if (value_string == 0)
@@ -319,6 +321,7 @@ JValue json_parse_string(JParser *parser, jsize_t *pos)
     JValue value;
     value.type = JSON_STRING;
     value.string = value_string;
+    value.length = string_size - 1;
     (*pos)++;
     return value;
 }
@@ -414,6 +417,7 @@ JValue json_parse_array(JParser *parser, jsize_t *pos)
     if (parser->input[start_pos] == ']')
     {
         value.array = 0;
+        value.length = 0;
         (*pos)++;
         return value;
     }
@@ -454,6 +458,7 @@ JValue json_parse_array(JParser *parser, jsize_t *pos)
         (*pos)++;
     }
     value.array = array_values;
+    value.length = array_values_count;
     return value;
 }
 
