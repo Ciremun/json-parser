@@ -8,3 +8,4 @@ nobuild
 test
 c-tests
 cxx-tests
+twitch-payload

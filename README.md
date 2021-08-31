@@ -1,7 +1,7 @@
 # json-parser
 
     cc nobuild.c -o nobuild
-    ./nobuild
+    ./nobuild examples
 
 # thank
 
