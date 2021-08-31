@@ -3,6 +3,17 @@
 
 #define COUNT(a) (sizeof(a) / sizeof(*a))
 #define TEST(cond) test(cond, #cond)
+#define TOTAL_ERRORS                                                           \
+    if (total_errors == 0)                                                     \
+    {                                                                          \
+        fprintf(stdout, "all tests passed\n");                                 \
+        return 0;                                                              \
+    }                                                                          \
+    else                                                                       \
+    {                                                                          \
+        fprintf(stdout, "total errors: %zu\n", total_errors);                  \
+        return 1;                                                              \
+    }
 
 extern size_t total_errors;
 

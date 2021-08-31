@@ -248,14 +248,5 @@ int main(void)
     for (size_t i = 0; i < COUNT(tests); ++i)
         tests[i].f();
 
-    if (total_errors == 0)
-    {
-        fprintf(stdout, "all tests passed\n");
-        return 0;
-    }
-    else
-    {
-        fprintf(stdout, "total errors: %zu\n", total_errors);
-        return 1;
-    }
+    TOTAL_ERRORS
 }
