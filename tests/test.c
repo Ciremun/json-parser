@@ -16,6 +16,24 @@
 
 size_t total_errors;
 
+typedef struct
+{
+    char *base;
+    char *start;
+} Memory;
+
+void *custom_alloc(void *struct_ptr, unsigned long long int size)
+{
+    Memory *memory = (Memory *)struct_ptr;
+    memory->start += size;
+    return memory->start - size;
+}
+
+void *custom_malloc(void *struct_ptr, unsigned long long int size)
+{
+    return malloc(size);
+}
+
 void *returns_null(void *struct_ptr, unsigned long long int size)
 {
     (void)struct_ptr;
@@ -335,12 +353,59 @@ void test_input(void)
     }
 }
 
+void test_memory(void)
+{
+    {
+        JMemory memory = {.base = (char *)malloc(1024), .alloc = custom_malloc, .struct_ptr = 0};
+
+        char malloc_input[] = "[\"hello, malloc!\"]";
+
+        JParser parser = json_init(&memory, malloc_input);
+        JValue array = json_parse(&parser);
+        if (TEST(array.type == JSON_ARRAY))
+        {
+            TEST(array.length == 1);
+            JValue array_string = array.array[0];
+            if (TEST(array_string.type == JSON_STRING))
+            {
+                TEST(array_string.length == 14);
+                TEST(strcmp(array_string.string, "hello, malloc!") == 0);
+                free(array_string.string);
+            }
+        }
+
+        free(memory.base);
+    }
+
+    {
+        char mem[256];
+        Memory custom = {.base = mem, .start = mem};
+        JMemory memory = {.base = custom.base, .alloc = custom_alloc, .struct_ptr = &custom};
+        
+        char stack_input[] = "[\"hello, stack!\"]";
+
+        JParser parser = json_init(&memory, stack_input);
+        JValue array = json_parse(&parser);
+        if (TEST(array.type == JSON_ARRAY))
+        {
+            TEST(array.length == 1);
+            JValue array_string = array.array[0];
+            if (TEST(array_string.type == JSON_STRING))
+            {
+                TEST(array_string.length == 13);
+                TEST(strcmp(array_string.string, "hello, stack!") == 0);
+            }
+        }
+    }
+}
+
 Test tests[] = {
     { .name = "values", .f = test_values },
     { .name = "errors", .f = test_errors },
     { .name = "single array", .f = test_single_array },
     { .name = "memory error", .f = test_memory_error },
     { .name = "input", .f = test_input },
+    { .name = "memory", .f = test_memory },
 };
 
 int main(void)
