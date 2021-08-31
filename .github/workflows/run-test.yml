@@ -46,13 +46,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: seanmiddleditch/gha-setup-vsdevenv@master
-      - name: run tests
+      - name: run tests and examples
         shell: cmd
         run: |
-          cl nobuild.c && nobuild.exe
-      - name: run examples
-        run: |
-          nobuild.exe examples
+          cl nobuild.c && nobuild.exe && nobuild.exe examples
   windows-gcc:
     runs-on: windows-latest
     strategy:
@@ -73,12 +70,9 @@ jobs:
         run: |
           msys2 -c 'pacman --noconfirm -Suuy'
           msys2 -c 'pacman --noconfirm -Suu'
-      - name: run tests
+      - name: run tests and examples
         run: |
-          gcc nobuild.c -onobuild && nobuild.exe
-      - name: run examples
-        run: |
-          nobuild.exe examples
+          gcc nobuild.c -onobuild && nobuild.exe && nobuild.exe examples
         shell: cmd
         env:
           CC: gcc
@@ -104,12 +98,9 @@ jobs:
         run: |
           msys2 -c 'pacman --noconfirm -Suuy'
           msys2 -c 'pacman --noconfirm -Suu'
-      - name: run tests
+      - name: run tests and examples
         run: |
-          clang nobuild.c -onobuild && nobuild.exe
-      - name: run examples
-        run: |
-          nobuild.exe examples
+          clang nobuild.c -onobuild && nobuild.exe && nobuild.exe examples
         shell: cmd
         env:
           CC: clang
