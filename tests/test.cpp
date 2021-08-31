@@ -30,8 +30,29 @@ void test_errors()
     jmem_free(memory);
 }
 
+void test_values()
+{
+    const char* input = "{\"test\": 69}";
+
+    JMemory *memory = jmem_init();
+    TEST(memory != 0);
+
+    JParser parser = json_init(memory, input);
+    JValue json = json_parse(&parser);
+
+    if (TEST(json.type == JSON_OBJECT))
+    {
+        JValue object_number = json_get(&json.object, "test");
+        if (TEST(object_number.type == JSON_NUMBER))
+            TEST(object_number.number == 69);
+    }
+
+    jmem_free(memory);
+}
+
 Test tests[] = {
     { "errors", test_errors },
+    { "values", test_values },
 };
 
 int main()
