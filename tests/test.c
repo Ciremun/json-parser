@@ -31,6 +31,7 @@ void *custom_alloc(void *struct_ptr, unsigned long long int size)
 
 void *custom_malloc(void *struct_ptr, unsigned long long int size)
 {
+    (void)struct_ptr;
     return malloc(size);
 }
 
