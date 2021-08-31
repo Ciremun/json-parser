@@ -237,10 +237,28 @@ void test_single_array(void)
     jmem_free(memory);
 }
 
+void test_memory_error(void)
+{
+    const char* input = "{\"k\":\"v\"}";
+
+    JMemory *memory = jmem_init();
+    TEST(memory != 0);
+
+    JMemory fake_memory = { .base = memory->base, .alloc = returns_null, .struct_ptr = 0 };
+    JParser parser = json_init(&fake_memory, input);
+    JValue json = json_parse(&parser);
+
+    if (TEST(json.type == JSON_ERROR))
+        TEST(json.error == JSON_MEMORY_ERROR);
+
+    jmem_free(memory);
+}
+
 Test tests[] = {
     { .name = "values", .f = test_values },
     { .name = "errors", .f = test_errors },
     { .name = "single array", .f = test_single_array },
+    { .name = "memory error", .f = test_memory_error }
 };
 
 int main(void)
