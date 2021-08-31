@@ -261,11 +261,86 @@ void test_memory_error(void)
     jmem_free(memory);
 }
 
+void test_input(void)
+{
+    {
+        const char* string_literal_input = "{\"k\":\"v\"}";
+
+        JMemory *memory = jmem_init();
+        TEST(memory != 0);
+
+        JParser parser = json_init(memory, string_literal_input);
+        JValue json = json_parse(&parser);
+
+        if (TEST(json.type == JSON_OBJECT))
+        {
+            JValue object_string = json_get(&json.object, "k");
+            if (TEST(object_string.type == JSON_STRING))
+            {
+                TEST(object_string.length == 1);
+                TEST(object_string.string[0] == 'v');
+            }
+        }
+
+        jmem_free(memory);
+    }
+
+    {
+        JMemory *memory = jmem_init();
+        TEST(memory != 0);
+
+        char *file_input = read_file_as_str("tests/test_input.json");
+
+        JParser parser = json_init(memory, file_input);
+        JValue json = json_parse(&parser);
+        if (TEST(json.type == JSON_OBJECT))
+        {
+            JValue object_array = json_get(&json.object, "test key");
+            if (TEST(object_array.type == JSON_ARRAY))
+            {
+                TEST(object_array.length == 1);
+                JValue array_string = object_array.array[0];
+                if (TEST(array_string.type == JSON_STRING))
+                {
+                    TEST(array_string.length == 10);
+                    TEST(strcmp(array_string.string, "test value") == 0);
+                }
+            }
+        }
+
+        jmem_free(memory);
+        free(file_input);
+    }
+
+    {
+        JMemory *memory = jmem_init();
+        TEST(memory != 0);
+
+        char stack_input[] = "[\"hello, stack!\"]";
+
+        JParser parser = json_init(memory, stack_input);
+        JValue array = json_parse(&parser);
+        if (TEST(array.type == JSON_ARRAY))
+        {
+            TEST(array.length == 1);
+            JValue array_string = array.array[0];
+            if (TEST(array_string.type == JSON_STRING))
+            {
+                TEST(array_string.length == 13);
+                TEST(strcmp(array_string.string, "hello, stack!") == 0);
+            }
+        }
+
+        jmem_free(memory);
+    }
+}
+
 Test tests[] = {
     { .name = "values", .f = test_values },
     { .name = "errors", .f = test_errors },
     { .name = "single array", .f = test_single_array },
     { .name = "memory error", .f = test_memory_error },
+    { .name = "input", .f = test_input },
 };
 
 int main(void)
