@@ -35,7 +35,7 @@ int test(int cond, const char *test, jsize_t line_number)
     if (!cond)
     {
         total_errors++;
-        fprintf(stdout, "%zu: %s FAILED\n", line_number, test);
+        fprintf(stdout, "%llu: %s FAILED\n", line_number, test);
     }
     return cond;
 }
