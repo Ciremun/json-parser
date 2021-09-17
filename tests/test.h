@@ -2,7 +2,8 @@
 #include <stdlib.h>
 
 #define COUNT(a) (sizeof(a) / sizeof(*a))
-#define TEST(cond) test(cond, #cond)
+#define STRINGIFY(x) #x
+#define TEST(cond) test(cond, #cond, __LINE__)
 #define TOTAL_ERRORS                                                           \
     if (total_errors == 0)                                                     \
     {                                                                          \
@@ -29,12 +30,12 @@ typedef struct
     void (*f)(void);
 } Test;
 
-int test(int cond, const char *test)
+int test(int cond, const char *test, jsize_t line_number)
 {
     if (!cond)
     {
         total_errors++;
-        fprintf(stdout, "%s FAILED\n", test);
+        fprintf(stdout, "%zu: %s FAILED\n", line_number, test);
     }
     return cond;
 }

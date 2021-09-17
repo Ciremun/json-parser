@@ -1,4 +1,4 @@
-// #define NDEBUG
+#define NDEBUG
 
 #define JMEM_IMPLEMENTATION
 #include "../jmem.h"
