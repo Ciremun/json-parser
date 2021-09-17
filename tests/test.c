@@ -111,6 +111,8 @@ void test_values(void)
     if (!TEST(json.type == JSON_OBJECT))
         return;
 
+    TEST(json.length == 9);
+
     JValue number = json_get(&json.object, "number");
     if (TEST(number.type == JSON_NUMBER))
         TEST(number.number == 12345);

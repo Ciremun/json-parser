@@ -22,6 +22,7 @@ void test_errors()
 
     if (TEST(json.type == JSON_OBJECT))
     {
+        TEST(json.length == 0);
         JValue nested_error = json["deep"][6]["dark"][9]["error"];
         if (TEST(nested_error.type == JSON_ERROR))
             TEST(nested_error.error == JSON_TYPE_ERROR);
@@ -98,8 +99,8 @@ void test_single_values()
 
     value = json_parse(&parser);
 
-    // TODO(#31): test object pairs count
-    TEST(value.type == JSON_OBJECT);
+    if (TEST(value.type == JSON_OBJECT))
+        TEST(value.length == 0);
 
     jmem_free(memory);
 

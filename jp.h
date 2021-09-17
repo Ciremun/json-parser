@@ -110,7 +110,6 @@ int json_match_char(char c, const char *input, jsize_t *pos);
 int json_skip_whitespaces(const char *input, jsize_t *pos);
 int json_memcmp(const void *str1, const void *str2, jsize_t count);
 int json_strcmp(const char *p1, const char *p2);
-void json_object_init(JObject *object, JPair *pairs);
 void json_object_add_pair(JObject *object, char *key, JValue value);
 void *json_memcpy(void *dst, void const *src, jsize_t size);
 JParser json_init(JMemory *memory, const char *input);
@@ -224,12 +223,6 @@ void *json_memcpy(void *dst, void const *src, jsize_t size)
     while (size--)
         *dest++ = *source++;
     return dst;
-}
-
-void json_object_init(JObject *object, JPair *pairs)
-{
-    object->pairs = pairs;
-    object->pairs_count = 0;
 }
 
 void json_object_add_pair(JObject *object, char *key, JValue value)
@@ -507,7 +500,9 @@ JValue json_parse_object(JParser *parser, jsize_t *pos)
                                    sizeof(JPair) * parser->pairs_commited);
     JValue object;
     object.type = JSON_OBJECT;
-    json_object_init(&object.object, pairs_start);
+    object.length = 0;
+    object.object.pairs = pairs_start;
+    object.object.pairs_count = 0;
 
     jsize_t i = *pos;
     do
@@ -593,6 +588,7 @@ parse_pair:
     if (!json_skip_whitespaces(parser->input, pos))
         UNEXPECTED_EOF(*pos);
 
+    object.length++;
     if (parser->input[*pos] == ',')
     {
         (*pos)++;
