@@ -1,6 +1,3 @@
-#define JMEM_IMPLEMENTATION
-#include "../jmem.h"
-
 #define JP_IMPLEMENTATION
 #include "../jp.h"
 
@@ -29,8 +26,9 @@ int main(void)
 
     printf("%s\n", input);
 
-    JMemory *memory = jmem_init();
-    JParser parser = json_init(memory, input);
+    JMemory memory;
+    memory.alloc = malloc;
+    JParser parser = json_init(&memory, input);
     JValue json = json_parse(&parser);
 
     if (json.type == JSON_OBJECT)

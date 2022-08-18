@@ -2,6 +2,8 @@
 *.old
 *.exe
 *.obj
+*.pdb
+*.ilk
 input.json
 jp
 nobuild

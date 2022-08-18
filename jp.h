@@ -60,8 +60,7 @@ typedef enum
 typedef struct
 {
     char *base;
-    void *(*alloc)(void *struct_ptr, unsigned long long int size);
-    void *struct_ptr;
+    void *(*alloc)(unsigned long long int size);
 } JMemory;
 
 typedef struct
@@ -242,8 +241,7 @@ JParser json_init(JMemory *memory, const char *input)
     for (jsize_t i = 0; input[i] != 0; ++i)
         if (input[i] == ':' && input[i - 1] == '"' && input[i - 2] != '\\')
             parser.pairs_total++;
-    memory->alloc(parser.memory->struct_ptr,
-                  sizeof(JPair) * parser.pairs_total);
+    memory->alloc(sizeof(JPair) * parser.pairs_total);
     return parser;
 }
 
@@ -283,8 +281,7 @@ JValue json_parse_string(JParser *parser, jsize_t *pos)
     if (*pos - start != 0)
     {
         string_size = *pos - start + 1;
-        value_string = (char *)parser->memory->alloc(parser->memory->struct_ptr,
-                                                     string_size);
+        value_string = (char *)parser->memory->alloc(string_size);
         if (value_string == 0)
         {
             JValue value;
@@ -413,8 +410,7 @@ JValue json_parse_array(JParser *parser, jsize_t *pos)
             array_values_count++;
         start_pos++;
     } while (open_bracket_count != 0);
-    JValue *array_values = (JValue *)parser->memory->alloc(
-        parser->memory->struct_ptr, sizeof(JValue) * array_values_count);
+    JValue *array_values = (JValue *)parser->memory->alloc(sizeof(JValue) * array_values_count);
     if (array_values == 0)
     {
         JValue value;
