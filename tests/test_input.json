@@ -1,3 +1,1 @@
-{
-    "test key": ["test value"]
-}
+{"number": 12345, "empty_string": "", "string": "test string", "bool": true, "null": null, "array": [69, "another test string", false, null, ["yet another test string"], {"test": [{"nested": "nested string"}]}, {"nested_array_object": 69}], "empty_array": [], "empty_object": {}, "object": {"array_object": "array object string"}}
