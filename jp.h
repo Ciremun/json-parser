@@ -457,15 +457,15 @@ JValue json_parse_value(JParser *parser)
     case 'n':
         return json_parse_null(parser);
     default:
-    {
-        JValue value;
-        value.type = JSON_ERROR;
-        value.error = JSON_PARSE_ERROR;
+        {
+            JValue value;
+            value.type = JSON_ERROR;
+            value.error = JSON_PARSE_ERROR;
 #if !defined(NDEBUG)
-        fprintf(stderr, "unknown char %c at %llu\n", parser->input[parser->pos], parser->pos);
+            fprintf(stderr, "unknown char %c at %llu\n", parser->input[parser->pos], parser->pos);
 #endif // NDEBUG
-        return value;
-    }
+            return value;
+        }
     }
 }
 
@@ -559,10 +559,10 @@ parse_pair:
                 JValue error_value;
                 error_value.type = JSON_ERROR;
                 error_value.error = JSON_PARSE_ERROR;
-    #if !defined(NDEBUG)
+#if !defined(NDEBUG)
                 fprintf(stderr, "expected '%c' found '%c' at %llu\n", ':',
                         parser->input[parser->pos - 1], parser->pos - 1);
-    #endif // NDEBUG
+#endif // NDEBUG
                 return error_value;
             }
         }
