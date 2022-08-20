@@ -16,6 +16,7 @@
 // TODO(Ciremun): move input pos to parser
 // TODO(Ciremun): move JValue length to the corresponding value struct
 // TODO(Ciremun): turn unexpected eof macro into a function
+// TODO(Ciremun): easy api that doesn't require passing the memory struct
 #if !defined(NDEBUG)
 #define UNEXPECTED_EOF(pos)                                                    \
     do                                                                         \
