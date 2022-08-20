@@ -519,73 +519,73 @@ JValue json_parse_object(JParser *parser)
     } while (parser->input[i++] != '}');
 
 parse_pair:
-{
     {
-        int match = json_match_char(parser, '"');
-        if (match == JSON_UNEXPECTED_EOF)
-            return json_unexpected_eof(parser->pos);
-        if (match == JSON_PARSE_ERROR)
         {
-            if (parser->input[parser->pos - 1] == '}')
+            int match = json_match_char(parser, '"');
+            if (match == JSON_UNEXPECTED_EOF)
+                return json_unexpected_eof(parser->pos);
+            if (match == JSON_PARSE_ERROR)
             {
-                value.object.data = 0;
+                if (parser->input[parser->pos - 1] == '}')
+                {
+                    value.object.data = 0;
+                    return value;
+                }
+                JValue value;
+                value.type = JSON_ERROR;
+                value.error = JSON_PARSE_ERROR;
+#if !defined(NDEBUG)
+                fprintf(stderr, "expected '%c' found '%c' at %llu\n", '"',
+                        parser->input[parser->pos - 1], parser->pos - 1);
+#endif // NDEBUG
                 return value;
             }
-            JValue value;
-            value.type = JSON_ERROR;
-            value.error = JSON_PARSE_ERROR;
-#if !defined(NDEBUG)
-            fprintf(stderr, "expected '%c' found '%c' at %llu\n", '"',
-                    parser->input[parser->pos - 1], parser->pos - 1);
-#endif // NDEBUG
-            return value;
         }
-    }
 
-    (parser->pos)--;
+        (parser->pos)--;
 
-    JValue key_value = json_parse_string(parser);
-    if (key_value.type == JSON_ERROR)
-        return key_value;
+        JValue key_value = json_parse_string(parser);
+        if (key_value.type == JSON_ERROR)
+            return key_value;
 
-    char *key = key_value.string.data;
+        char *key = key_value.string.data;
 
-    {
-        int match = json_match_char(parser, ':');
-        if (match == JSON_UNEXPECTED_EOF)
-            return json_unexpected_eof(parser->pos);
-        if (match == JSON_PARSE_ERROR)
         {
-            JValue error_value;
-            error_value.type = JSON_ERROR;
-            error_value.error = JSON_PARSE_ERROR;
-#if !defined(NDEBUG)
-            fprintf(stderr, "expected '%c' found '%c' at %llu\n", ':',
-                    parser->input[parser->pos - 1], parser->pos - 1);
-#endif // NDEBUG
-            return error_value;
+            int match = json_match_char(parser, ':');
+            if (match == JSON_UNEXPECTED_EOF)
+                return json_unexpected_eof(parser->pos);
+            if (match == JSON_PARSE_ERROR)
+            {
+                JValue error_value;
+                error_value.type = JSON_ERROR;
+                error_value.error = JSON_PARSE_ERROR;
+    #if !defined(NDEBUG)
+                fprintf(stderr, "expected '%c' found '%c' at %llu\n", ':',
+                        parser->input[parser->pos - 1], parser->pos - 1);
+    #endif // NDEBUG
+                return error_value;
+            }
         }
-    }
-    if (!json_skip_whitespaces(parser))
-        return json_unexpected_eof(parser->pos);
+        if (!json_skip_whitespaces(parser))
+            return json_unexpected_eof(parser->pos);
 
-    JValue object_value = json_parse_value(parser);
-    if (object_value.type == JSON_ERROR)
-        return object_value;
+        JValue object_value = json_parse_value(parser);
+        if (object_value.type == JSON_ERROR)
+            return object_value;
 
-    value.object.data[value.object.length].key = key;
-    value.object.data[value.object.length].value = object_value;
-    value.object.length++;
+        value.object.data[value.object.length].key = key;
+        value.object.data[value.object.length].value = object_value;
+        value.object.length++;
 
-    if (!json_skip_whitespaces(parser))
-        return json_unexpected_eof(parser->pos);
+        if (!json_skip_whitespaces(parser))
+            return json_unexpected_eof(parser->pos);
 
-    if (parser->input[parser->pos] == ',')
-    {
-        parser->pos++;
-        goto parse_pair;
-    }
-}
+        if (parser->input[parser->pos] == ',')
+        {
+            parser->pos++;
+            goto parse_pair;
+        }
+    } // parse_pair
     {
         int match = json_match_char(parser, '}');
         if (match == JSON_UNEXPECTED_EOF)
