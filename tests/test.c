@@ -4,46 +4,9 @@
 #define JIM_IMPLEMENTATION
 #include "jim.h"
 
-#include <assert.h>
-#include <string.h>
-
 #include "test.h"
 
 size_t total_errors;
-
-typedef struct
-{
-    char *base;
-    char *start;
-} Memory;
-
-void *custom_alloc(void *struct_ptr, unsigned long long int size)
-{
-    Memory *memory = (Memory *)struct_ptr;
-    memory->start += size;
-    return memory->start - size;
-}
-
-void *custom_malloc(void *struct_ptr, unsigned long long int size)
-{
-    (void)struct_ptr;
-    return malloc(size);
-}
-
-void *returns_null(void *struct_ptr, unsigned long long int size)
-{
-    (void)struct_ptr;
-    (void)size;
-    return 0;
-}
-
-size_t write_to_string(const void *buffer, size_t size, size_t count, void *stream)
-{
-    String* str = (String *)stream;
-    memcpy(str->start + str->length, buffer, count * size);
-    str->length += count;
-    return count;
-}
 
 void test_values(void)
 {
@@ -99,7 +62,7 @@ void test_values(void)
 
     // JMemory *memory = jmem_init();
     JMemory memory;
-    memory.alloc = malloc;
+    memory.alloc = custom_malloc;
     // TEST(memory != 0);
 
     JParser parser = json_init(&memory, buffer);
@@ -306,7 +269,7 @@ void test_input(void)
     {
         char *file_input = read_file_as_str("tests/test_input.json");
         JMemory memory;
-        memory.alloc = malloc;
+        memory.alloc = custom_malloc;
         JParser parser = json_init(&memory, file_input);
         JValue json = json_parse(&parser);
         if (TEST(json.type == JSON_OBJECT))

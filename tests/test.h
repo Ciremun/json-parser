@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #define COUNT(a) (sizeof(a) / sizeof(*a))
 #define STRINGIFY(x) #x
@@ -30,6 +31,25 @@ typedef struct
     const char *name;
     void (*f)(void);
 } Test;
+
+void *custom_malloc(unsigned long long int size)
+{
+    return malloc(size);
+}
+
+void *returns_null(unsigned long long int size)
+{
+    (void)size;
+    return 0;
+}
+
+size_t write_to_string(const void *buffer, size_t size, size_t count, void *stream)
+{
+    String* str = (String *)stream;
+    memcpy(str->start + str->length, buffer, count * size);
+    str->length += count;
+    return count;
+}
 
 int test(int cond, const char *test, jsize_t line_number)
 {
