@@ -3,8 +3,6 @@
 
 #include "test.h"
 
-size_t total_errors;
-
 void test_errors()
 {
     const char *input = "{}";

@@ -6,8 +6,6 @@
 
 #include "test.h"
 
-size_t total_errors;
-
 void test_values(void)
 {
     char buffer[512] = {0};

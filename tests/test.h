@@ -21,7 +21,7 @@
         }                                                                      \
     } while (0)
 
-extern size_t total_errors;
+size_t total_errors;
 
 typedef struct
 {
@@ -36,7 +36,7 @@ typedef struct
 } Test;
 
 
-static char *test_memory_buffer_base = 0;
+char *test_memory_buffer_base = 0;
 
 void *custom_alloc(unsigned long long int size)
 {
