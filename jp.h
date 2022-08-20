@@ -12,7 +12,6 @@
 // TODO(#23): escapes
 // TODO(#17): examples
 // TODO(#14): tests
-// TODO(Ciremun): remove pairs_total from parser
 // TODO(Ciremun): move input pos to parser
 // TODO(Ciremun): move JValue length to the corresponding value struct
 // TODO(Ciremun): turn unexpected eof macro into a function
@@ -70,23 +69,34 @@ typedef struct
 
 typedef struct
 {
-    JPair *pairs;
-    jsize_t pairs_count;
+    JPair *data;
+    jsize_t length;
 } JObject;
+
+typedef struct
+{
+    char *data;
+    jsize_t length;
+} JString;
+
+typedef struct
+{
+    JValue *data;
+    jsize_t length;
+} JArray;
 
 struct JValue
 {
     JType type;
-    jsize_t length;
     union
     {
         long long number;
         int boolean;
         int null;
-        char *string;
+        JString string;
         JCode error;
         JObject object;
-        JValue *array;
+        JArray array;
     };
 #ifdef __cplusplus
     JValue operator[](const char *key);
@@ -243,9 +253,9 @@ JParser json_init(JMemory *memory, const char *input)
 
 JValue json_get(JObject *object, const char *key)
 {
-    for (jsize_t i = 0; i < object->pairs_count; ++i)
-        if (json_strcmp(key, object->pairs[i].key) == 0)
-            return object->pairs[i].value;
+    for (jsize_t i = 0; i < object->length; ++i)
+        if (json_strcmp(key, object->data[i].key) == 0)
+            return object->data[i].value;
     JValue value;
     value.type = JSON_ERROR;
     value.error = JSON_KEY_NOT_FOUND;
@@ -290,8 +300,8 @@ JValue json_parse_string(JParser *parser, jsize_t *pos)
     }
     JValue value;
     value.type = JSON_STRING;
-    value.string = value_string;
-    value.length = string_size - 1;
+    value.string.data = value_string;
+    value.string.length = string_size - 1;
     (*pos)++;
     return value;
 }
@@ -384,8 +394,8 @@ JValue json_parse_array(JParser *parser, jsize_t *pos)
     jsize_t start_pos = *pos;
     if (parser->input[start_pos] == ']')
     {
-        value.array = 0;
-        value.length = 0;
+        value.array.data = 0;
+        value.array.length = 0;
         (*pos)++;
         return value;
     }
@@ -426,8 +436,8 @@ JValue json_parse_array(JParser *parser, jsize_t *pos)
             UNEXPECTED_EOF(*pos);
         (*pos)++;
     }
-    value.array = array_values;
-    value.length = array_values_count;
+    value.array.data = array_values;
+    value.array.length = array_values_count;
     return value;
 }
 
@@ -494,9 +504,8 @@ JValue json_parse_object(JParser *parser, jsize_t *pos)
                                    sizeof(JPair) * parser->pairs_commited);
     JValue object;
     object.type = JSON_OBJECT;
-    object.length = 0;
-    object.object.pairs = pairs_start;
-    object.object.pairs_count = 0;
+    object.object.data = pairs_start;
+    object.object.length = 0;
 
     jsize_t i = *pos;
     do
@@ -533,7 +542,7 @@ parse_pair:
         {
             if (parser->input[*pos - 1] == '}')
             {
-                object.object.pairs = 0;
+                object.object.data = 0;
                 return object;
             }
             JValue value;
@@ -553,7 +562,7 @@ parse_pair:
     if (key_value.type == JSON_ERROR)
         return key_value;
 
-    char *key = key_value.string;
+    char *key = key_value.string.data;
 
     {
         int match = json_match_char(':', parser->input, pos);
@@ -578,14 +587,14 @@ parse_pair:
     if (value.type == JSON_ERROR)
         return value;
 
-    object.object.pairs[object.object.pairs_count].key = key;
-    object.object.pairs[object.object.pairs_count].value = value;
-    object.object.pairs_count++;
+    object.object.data[object.object.length].key = key;
+    object.object.data[object.object.length].value = value;
+    object.object.length++;
 
     if (!json_skip_whitespaces(parser->input, pos))
         UNEXPECTED_EOF(*pos);
 
-    object.length++;
+    object.object.length++;
     if (parser->input[*pos] == ',')
     {
         (*pos)++;
