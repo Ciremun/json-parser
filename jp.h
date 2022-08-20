@@ -104,7 +104,6 @@ struct JPair
 typedef struct
 {
     JMemory *memory;
-    jsize_t pairs_total;
     jsize_t pairs_commited;
     const char *input;
 } JParser;
@@ -232,13 +231,13 @@ JParser json_init(JMemory *memory, const char *input)
 {
     JParser parser;
     parser.memory = memory;
-    parser.pairs_total = 0;
     parser.pairs_commited = 0;
     parser.input = input;
+    jsize_t pairs_total = 0;
     for (jsize_t i = 0; input[i] != 0; ++i)
         if (input[i] == ':' && input[i - 1] == '"' && input[i - 2] != '\\')
-            parser.pairs_total++;
-    parser.memory->base = (char *)parser.memory->alloc(sizeof(JPair) * parser.pairs_total);
+            pairs_total++;
+    parser.memory->base = (char *)parser.memory->alloc(sizeof(JPair) * pairs_total);
     return parser;
 }
 
