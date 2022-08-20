@@ -109,7 +109,6 @@ int json_match_char(char c, const char *input, jsize_t *pos);
 int json_skip_whitespaces(const char *input, jsize_t *pos);
 int json_memcmp(const void *str1, const void *str2, jsize_t count);
 int json_strcmp(const char *p1, const char *p2);
-void json_object_add_pair(JObject *object, char *key, JValue value);
 void *json_memcpy(void *dst, void const *src, jsize_t size);
 JParser json_init(JMemory *memory, const char *input);
 JValue json_get(JObject *object, const char *key);
@@ -224,13 +223,6 @@ void *json_memcpy(void *dst, void const *src, jsize_t size)
     return dst;
 }
 
-void json_object_add_pair(JObject *object, char *key, JValue value)
-{
-    object->pairs[object->pairs_count].key = key;
-    object->pairs[object->pairs_count].value = value;
-    object->pairs_count++;
-}
-
 JParser json_init(JMemory *memory, const char *input)
 {
     JParser parser;
@@ -241,7 +233,7 @@ JParser json_init(JMemory *memory, const char *input)
     for (jsize_t i = 0; input[i] != 0; ++i)
         if (input[i] == ':' && input[i - 1] == '"' && input[i - 2] != '\\')
             parser.pairs_total++;
-    parser.memory->base = parser.memory->alloc(sizeof(JPair) * parser.pairs_total);
+    parser.memory->base = (char *)parser.memory->alloc(sizeof(JPair) * parser.pairs_total);
     return parser;
 }
 
@@ -582,7 +574,10 @@ parse_pair:
     if (value.type == JSON_ERROR)
         return value;
 
-    json_object_add_pair(&object.object, key, value);
+    object.object.pairs[object.object.pairs_count].key = key;
+    object.object.pairs[object.object.pairs_count].value = value;
+    object.object.pairs_count++;
+
     if (!json_skip_whitespaces(parser->input, pos))
         UNEXPECTED_EOF(*pos);
 
