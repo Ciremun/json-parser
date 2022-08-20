@@ -6,17 +6,20 @@
 #define COUNT(a) (sizeof(a) / sizeof(*a))
 #define STRINGIFY(x) #x
 #define TEST(cond) test(cond, #cond, __LINE__)
-#define TOTAL_ERRORS                                                           \
-    if (total_errors == 0)                                                     \
+#define TOTAL_ERRORS()                                                         \
+    do                                                                         \
     {                                                                          \
-        fprintf(stdout, "all tests passed\n");                                 \
-        return 0;                                                              \
-    }                                                                          \
-    else                                                                       \
-    {                                                                          \
-        fprintf(stdout, "total errors: %zu\n", total_errors);                  \
-        return 1;                                                              \
-    }
+        if (total_errors == 0)                                                 \
+        {                                                                      \
+            fprintf(stdout, "all tests passed\n");                             \
+            return 0;                                                          \
+        }                                                                      \
+        else                                                                   \
+        {                                                                      \
+            fprintf(stdout, "total errors: %zu\n", total_errors);              \
+            return 1;                                                          \
+        }                                                                      \
+    } while (0)
 
 extern size_t total_errors;
 
@@ -31,6 +34,15 @@ typedef struct
     const char *name;
     void (*f)(void);
 } Test;
+
+
+static char *test_memory_buffer_base = 0;
+
+void *custom_alloc(unsigned long long int size)
+{
+    test_memory_buffer_base += size;
+    return test_memory_buffer_base - size;
+}
 
 void *custom_malloc(unsigned long long int size)
 {
