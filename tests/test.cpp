@@ -17,7 +17,7 @@ void test_errors()
 
     if (TEST(json.type == JSON_OBJECT))
     {
-        TEST(json.length == 0);
+        TEST(json.object.length == 0);
         JValue nested_error = json["deep"][6]["dark"][9]["error"];
         if (TEST(nested_error.type == JSON_ERROR))
             TEST(nested_error.error == JSON_TYPE_ERROR);
@@ -61,7 +61,7 @@ void test_single_values()
     value = json_parse(&parser);
 
     if (TEST(value.type == JSON_STRING))
-        TEST(strcmp(value.string, "string") == 0);
+        TEST(strcmp(value.string.data, "string") == 0);
 
     input = "[]";
     parser = json_init(&memory, input);
@@ -69,7 +69,7 @@ void test_single_values()
     value = json_parse(&parser);
 
     if (TEST(value.type == JSON_ARRAY))
-        TEST(value.array == 0);
+        TEST(value.array.data == 0);
 
     input = "{}";
     parser = json_init(&memory, input);
@@ -77,7 +77,7 @@ void test_single_values()
     value = json_parse(&parser);
 
     if (TEST(value.type == JSON_OBJECT))
-        TEST(value.length == 0);
+        TEST(value.object.length == 0);
 
     input = "true";
     parser = json_init(&memory, input);

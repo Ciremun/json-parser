@@ -6,37 +6,13 @@
 #include <stdlib.h>
 #endif // NDEBUG
 
-// TODO(#26): JValue array, string length
 // TODO(#21): utf8
 // TODO(#22): hex
 // TODO(#23): escapes
 // TODO(#17): examples
 // TODO(#14): tests
 // TODO(Ciremun): move input pos to parser
-// TODO(Ciremun): move JValue length to the corresponding value struct
-// TODO(Ciremun): turn unexpected eof macro into a function
 // TODO(Ciremun): easy api that doesn't require passing the memory struct
-#if !defined(NDEBUG)
-#define UNEXPECTED_EOF(pos)                                                    \
-    do                                                                         \
-    {                                                                          \
-        JValue value;                                                          \
-        value.type = JSON_ERROR;                                               \
-        value.error = JSON_UNEXPECTED_EOF;                                     \
-        fprintf(stderr, "unexpected end of file at %llu\n", pos);              \
-        return value;                                                          \
-    } while (0)
-#else
-#define UNEXPECTED_EOF(...)                                                    \
-    do                                                                         \
-    {                                                                          \
-        JValue value;                                                          \
-        value.type = JSON_ERROR;                                               \
-        value.error = JSON_UNEXPECTED_EOF;                                     \
-        return value;                                                          \
-    } while (0)
-#endif // NDEBUG
-
 typedef struct JPair JPair;
 typedef struct JValue JValue;
 typedef unsigned long long int jsize_t;
@@ -135,6 +111,7 @@ JValue json_parse_boolean(JParser *parser, jsize_t *pos, int bool_value,
                           const char *bool_string, jsize_t bool_string_length);
 JValue json_parse_null(JParser *parser, jsize_t *pos);
 JValue json_parse_array(JParser *parser, jsize_t *pos);
+JValue json_unexpected_eof(jsize_t pos);
 
 #endif // JP_H_
 
@@ -167,7 +144,7 @@ JValue JValue::operator[](jsize_t idx)
 #endif // NDEBUG
         return value;
     }
-    return array[idx];
+    return array.data[idx];
 }
 JValue JValue::operator[](int idx)
 {
@@ -268,7 +245,7 @@ JValue json_get(JObject *object, const char *key)
 JValue json_parse(JParser *parser)
 {
     jsize_t pos = 0;
-    // json_skip_whitespaces(parser->input, &pos);
+    json_skip_whitespaces(parser->input, &pos);
     return json_parse_value(parser, &pos);
 }
 
@@ -279,7 +256,7 @@ JValue json_parse_string(JParser *parser, jsize_t *pos)
     while (parser->input[*pos] != '"' && parser->input[*pos - 1] != '\\')
     {
         if (parser->input[*pos] == '\0')
-            UNEXPECTED_EOF(*pos);
+            return json_unexpected_eof(*pos);
         (*pos)++;
     }
     char *value_string = 0;
@@ -388,7 +365,7 @@ JValue json_parse_array(JParser *parser, jsize_t *pos)
 {
     (*pos)++;
     if (!json_skip_whitespaces(parser->input, pos))
-        UNEXPECTED_EOF(*pos);
+        return json_unexpected_eof(*pos);
     JValue value;
     value.type = JSON_ARRAY;
     jsize_t start_pos = *pos;
@@ -405,7 +382,7 @@ JValue json_parse_array(JParser *parser, jsize_t *pos)
     do
     {
         if (parser->input[start_pos] == '\0')
-            UNEXPECTED_EOF(start_pos);
+            return json_unexpected_eof(start_pos);
         if (parser->input[start_pos] == '[')
             open_bracket_count++;
         if (parser->input[start_pos] == ']')
@@ -427,17 +404,28 @@ JValue json_parse_array(JParser *parser, jsize_t *pos)
     for (jsize_t i = 0; i < array_values_count; ++i)
     {
         if (!json_skip_whitespaces(parser->input, pos))
-            UNEXPECTED_EOF(*pos);
+            return json_unexpected_eof(*pos);
         JValue value = json_parse_value(parser, pos);
         if (value.type == JSON_ERROR)
             return value;
         array_values[i] = value;
         if (!json_skip_whitespaces(parser->input, pos))
-            UNEXPECTED_EOF(*pos);
+            return json_unexpected_eof(*pos);
         (*pos)++;
     }
     value.array.data = array_values;
     value.array.length = array_values_count;
+    return value;
+}
+
+JValue json_unexpected_eof(jsize_t pos)
+{
+    JValue value;
+    value.type = JSON_ERROR;
+    value.error = JSON_UNEXPECTED_EOF;
+#if !defined(NDEBUG)
+    fprintf(stderr, "unexpected end of file at %llu\n", pos);
+#endif // NDEBUG
     return value;
 }
 
@@ -487,7 +475,7 @@ JValue json_parse_object(JParser *parser, jsize_t *pos)
 {
     int match = json_match_char('{', parser->input, pos);
     if (match == JSON_UNEXPECTED_EOF)
-        UNEXPECTED_EOF(*pos);
+        return json_unexpected_eof(*pos);
     if (match == JSON_PARSE_ERROR)
     {
         JValue value;
@@ -511,7 +499,7 @@ JValue json_parse_object(JParser *parser, jsize_t *pos)
     do
     {
         if (parser->input[i] == '\0')
-            UNEXPECTED_EOF(i);
+            return json_unexpected_eof(i);
         if (parser->input[i] == '{')
         {
             jsize_t open_curly_count = 1;
@@ -519,7 +507,7 @@ JValue json_parse_object(JParser *parser, jsize_t *pos)
             {
                 i++;
                 if (parser->input[i] == '\0')
-                    UNEXPECTED_EOF(i);
+                    return json_unexpected_eof(i);
                 if (parser->input[i] == '{')
                     open_curly_count++;
                 if (parser->input[i] == '}')
@@ -537,7 +525,7 @@ parse_pair:
     {
         int match = json_match_char('"', parser->input, pos);
         if (match == JSON_UNEXPECTED_EOF)
-            UNEXPECTED_EOF(*pos);
+            return json_unexpected_eof(*pos);
         if (match == JSON_PARSE_ERROR)
         {
             if (parser->input[*pos - 1] == '}')
@@ -567,34 +555,33 @@ parse_pair:
     {
         int match = json_match_char(':', parser->input, pos);
         if (match == JSON_UNEXPECTED_EOF)
-            UNEXPECTED_EOF(*pos);
+            return json_unexpected_eof(*pos);
         if (match == JSON_PARSE_ERROR)
         {
-            JValue value;
-            value.type = JSON_ERROR;
-            value.error = JSON_PARSE_ERROR;
+            JValue error_value;
+            error_value.type = JSON_ERROR;
+            error_value.error = JSON_PARSE_ERROR;
 #if !defined(NDEBUG)
             fprintf(stderr, "expected '%c' found '%c' at %llu\n", ':',
                     parser->input[*pos - 1], *pos - 1);
 #endif // NDEBUG
-            return value;
+            return error_value;
         }
     }
     if (!json_skip_whitespaces(parser->input, pos))
-        UNEXPECTED_EOF(*pos);
+        return json_unexpected_eof(*pos);
 
-    JValue value = json_parse_value(parser, pos);
-    if (value.type == JSON_ERROR)
-        return value;
+    JValue object_value = json_parse_value(parser, pos);
+    if (object_value.type == JSON_ERROR)
+        return object_value;
 
     value.object.data[value.object.length].key = key;
-    value.object.data[value.object.length].value = value;
+    value.object.data[value.object.length].value = object_value;
     value.object.length++;
 
     if (!json_skip_whitespaces(parser->input, pos))
-        UNEXPECTED_EOF(*pos);
+        return json_unexpected_eof(*pos);
 
-    value.object.length++;
     if (parser->input[*pos] == ',')
     {
         (*pos)++;
@@ -604,7 +591,7 @@ parse_pair:
     {
         int match = json_match_char('}', parser->input, pos);
         if (match == JSON_UNEXPECTED_EOF)
-            UNEXPECTED_EOF(*pos);
+            return json_unexpected_eof(*pos);
         if (match == JSON_PARSE_ERROR)
         {
             JValue error_value;

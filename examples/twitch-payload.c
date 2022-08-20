@@ -46,8 +46,8 @@ int main(void)
             printf("id.number: %lld\n", id.number);
         if (name.type == JSON_STRING)
         {
-            printf("name.string: %s\n", name.string);
-            printf("name.length: %llu\n", name.length);
+            printf("name.string: %s\n", name.string.data);
+            printf("name.length: %llu\n", name.string.length);
         }
         if (notifications.type == JSON_OBJECT)
         {

@@ -71,7 +71,7 @@ void test_values(void)
     if (!TEST(json.type == JSON_OBJECT))
         return;
 
-    TEST(json.length == 9);
+    TEST(json.object.length == 9);
 
     JValue number = json_get(&json.object, "number");
     if (TEST(number.type == JSON_NUMBER))
@@ -79,11 +79,11 @@ void test_values(void)
 
     JValue empty_string = json_get(&json.object, "empty_string");
     if (TEST(empty_string.type == JSON_STRING))
-        TEST(empty_string.string == 0);
+        TEST(empty_string.string.data == 0);
 
     JValue string = json_get(&json.object, "string");
     if (TEST(string.type == JSON_STRING))
-        TEST(strcmp(string.string, "test string") == 0);
+        TEST(strcmp(string.string.data, "test string") == 0);
 
     JValue boolean = json_get(&json.object, "bool");
     if (TEST(boolean.type == JSON_BOOL))
@@ -96,50 +96,50 @@ void test_values(void)
     JValue array = json_get(&json.object, "array");
     if (TEST(array.type == JSON_ARRAY))
     {
-        TEST(array.length == 7);
+        TEST(array.array.length == 7);
 
-        JValue array_number = array.array[0];
+        JValue array_number = array.array.data[0];
         if (TEST(array_number.type == JSON_NUMBER))
             TEST(array_number.number == 69);
 
-        JValue array_string = array.array[1];
+        JValue array_string = array.array.data[1];
         if (TEST(array_string.type == JSON_STRING))
-            TEST(strcmp(array_string.string, "another test string") == 0);
+            TEST(strcmp(array_string.string.data, "another test string") == 0);
 
-        JValue array_boolean = array.array[2];
+        JValue array_boolean = array.array.data[2];
         if (TEST(array_boolean.type == JSON_BOOL))
             TEST(!array_boolean.boolean);
 
-        JValue array_null= array.array[3];
+        JValue array_null= array.array.data[3];
         if (TEST(array_null.type == JSON_NULL))
             TEST(array_null.null == 0);
 
-        JValue array_array = array.array[4];
+        JValue array_array = array.array.data[4];
         if (TEST(array_array.type == JSON_ARRAY))
         {
-            JValue array_array_string = array_array.array[0];
+            JValue array_array_string = array_array.array.data[0];
             if (TEST(array_array_string.type == JSON_STRING))
-                TEST(strcmp(array_array_string.string, "yet another test string") == 0);
+                TEST(strcmp(array_array_string.string.data, "yet another test string") == 0);
         }
 
-        JValue array_object = array.array[5];
+        JValue array_object = array.array.data[5];
         if (TEST(array_object.type == JSON_OBJECT))
         {
             JValue array_object_array = json_get(&array_object.object, "test");
             if (TEST(array_object_array.type == JSON_ARRAY))
             {
-                JValue array_object_array_object = array_object_array.array[0];
+                JValue array_object_array_object = array_object_array.array.data[0];
                 if (TEST(array_object_array_object.type == JSON_OBJECT))
                 {
                     JValue array_object_array_object_string = json_get(&array_object_array_object.object, "nested");
                     if (TEST(array_object_array_object_string.type == JSON_STRING))
-                        TEST(strcmp(array_object_array_object_string.string, "nested string") == 0);
+                        TEST(strcmp(array_object_array_object_string.string.data, "nested string") == 0);
                 }
                 
             }
         }
 
-        JValue nested_array_object = array.array[6];
+        JValue nested_array_object = array.array.data[6];
         if (TEST(nested_array_object.type == JSON_OBJECT))
         {
             JValue nested_array_object_number = json_get(&nested_array_object.object, "nested_array_object");
@@ -152,13 +152,13 @@ void test_values(void)
     JValue empty_array = json_get(&json.object, "empty_array");
     if (TEST(empty_array.type == JSON_ARRAY))
     {
-        TEST(empty_array.length == 0);
-        TEST(empty_array.array == 0);
+        TEST(empty_array.array.length == 0);
+        TEST(empty_array.array.data == 0);
     }
 
     JValue empty_object = json_get(&json.object, "empty_object");
     if (TEST(empty_object.type == JSON_OBJECT))
-        TEST(empty_object.object.pairs == 0);
+        TEST(empty_object.object.data == 0);
 
     JValue object = json_get(&json.object, "object");
     if (TEST(object.type == JSON_OBJECT))
@@ -166,8 +166,8 @@ void test_values(void)
         JValue array_object_string = json_get(&object.object, "array_object");
         if (TEST(array_object_string.type == JSON_STRING))
         {
-            TEST(array_object_string.length == 19);
-            TEST(strcmp(array_object_string.string, "array object string") == 0);
+            TEST(array_object_string.string.length == 19);
+            TEST(strcmp(array_object_string.string.data, "array object string") == 0);
         }
     }
 
@@ -217,7 +217,7 @@ void test_values(void)
 //     JValue array = json_parse(&parser);
 //     if (TEST(array.type == JSON_ARRAY))
 //     {
-//         JValue array_number = array.array[0];
+//         JValue array_number = array.array.data[0];
 //         if (TEST(array_number.type == JSON_NUMBER))
 //             TEST(array_number.number == 69);
 //     }
@@ -275,9 +275,9 @@ void test_input(void)
         if (TEST(json.type == JSON_OBJECT))
         {
             JValue array = json_get(&json.object, "array");
-            JValue object = array.array[5];
+            JValue object = array.array.data[5];
             JValue object_array = json_get(&object.object, "test");
-            JValue object_array_object = object_array.array[0];
+            JValue object_array_object = object_array.array.data[0];
             JValue object_array_object_string = json_get(&object_array_object.object, "nested");
         }
         free(file_input);
@@ -293,8 +293,8 @@ void test_input(void)
     //     JValue array = json_parse(&parser);
     //     if (TEST(array.type == JSON_ARRAY))
     //     {
-    //         TEST(array.length == 1);
-    //         JValue array_string = array.array[0];
+    //         TEST(array.array.length == 1);
+    //         JValue array_string = array.array.data[0];
     //         if (TEST(array_string.type == JSON_STRING))
     //         {
     //             TEST(array_string.length == 13);
@@ -317,8 +317,8 @@ void test_input(void)
 //         JValue array = json_parse(&parser);
 //         if (TEST(array.type == JSON_ARRAY))
 //         {
-//             TEST(array.length == 1);
-//             JValue array_string = array.array[0];
+//             TEST(array.array.length == 1);
+//             JValue array_string = array.array.data[0];
 //             if (TEST(array_string.type == JSON_STRING))
 //             {
 //                 TEST(array_string.length == 14);
@@ -341,8 +341,8 @@ void test_input(void)
 //         JValue array = json_parse(&parser);
 //         if (TEST(array.type == JSON_ARRAY))
 //         {
-//             TEST(array.length == 1);
-//             JValue array_string = array.array[0];
+//             TEST(array.array.length == 1);
+//             JValue array_string = array.array.data[0];
 //             if (TEST(array_string.type == JSON_STRING))
 //             {
 //                 TEST(array_string.length == 13);
