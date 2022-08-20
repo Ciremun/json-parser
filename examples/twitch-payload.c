@@ -3,6 +3,11 @@
 
 #include <stdio.h>
 
+void *custom_malloc(unsigned long long int size)
+{
+    return malloc(size);
+}
+
 int main(void)
 {
     const char *input = "{\n\
