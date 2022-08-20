@@ -1,23 +1,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #define COUNT(a) (sizeof(a) / sizeof(*a))
 #define STRINGIFY(x) #x
 #define TEST(cond) test(cond, #cond, __LINE__)
-#define TOTAL_ERRORS                                                           \
-    if (total_errors == 0)                                                     \
+#define TOTAL_ERRORS()                                                         \
+    do                                                                         \
     {                                                                          \
-        fprintf(stdout, "all tests passed\n");                                 \
-        return 0;                                                              \
-    }                                                                          \
-    else                                                                       \
-    {                                                                          \
-        fprintf(stdout, "total errors: %zu\n", total_errors);                  \
-        return 1;                                                              \
-    }
+        if (total_errors == 0)                                                 \
+        {                                                                      \
+            fprintf(stdout, "all tests passed\n");                             \
+            return 0;                                                          \
+        }                                                                      \
+        else                                                                   \
+        {                                                                      \
+            fprintf(stdout, "total errors: %zu\n", total_errors);              \
+            return 1;                                                          \
+        }                                                                      \
+    } while (0)
 
-extern size_t total_errors;
+size_t total_errors;
 
 typedef struct
 {
@@ -30,6 +34,29 @@ typedef struct
     const char *name;
     void (*f)(void);
 } Test;
+
+
+char *test_memory_buffer_base = 0;
+
+void *custom_alloc(unsigned long long int size)
+{
+    test_memory_buffer_base += size;
+    return test_memory_buffer_base - size;
+}
+
+void *returns_null(unsigned long long int size)
+{
+    (void)size;
+    return 0;
+}
+
+size_t write_to_string(const void *buffer, size_t size, size_t count, void *stream)
+{
+    String* str = (String *)stream;
+    memcpy(str->start + str->length, buffer, count * size);
+    str->length += count;
+    return count;
+}
 
 int test(int cond, const char *test, jsize_t line_number)
 {

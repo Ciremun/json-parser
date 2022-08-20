@@ -4,9 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define CFLAGS "-Wall", "-Wextra", "-pedantic", "-std=c11", "-O0", "-g0"
+#define CFLAGS "-Wall", "-Wextra", "-pedantic", "-std=c11", "-O0", "-ggdb"
 #define MSVC_CFLAGS "/nologo", "/W3", "/std:c11"
-#define CXXFLAGS "-Wall", "-Wextra", "-pedantic", "-std=c++11", "-O0", "-g0"
+#define CXXFLAGS "-Wall", "-Wextra", "-pedantic", "-std=c++11", "-O0", "-ggdb"
 #define MSVC_CXXFLAGS "/nologo", "/W3", "/std:c++11"
 
 #ifdef _WIN32

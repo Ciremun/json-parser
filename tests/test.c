@@ -1,54 +1,10 @@
-#define NDEBUG
-
-#define JMEM_IMPLEMENTATION
-#include "../jmem.h"
-
 #define JP_IMPLEMENTATION
 #include "../jp.h"
 
 #define JIM_IMPLEMENTATION
 #include "jim.h"
 
-#include <assert.h>
-#include <string.h>
-
 #include "test.h"
-
-size_t total_errors;
-
-typedef struct
-{
-    char *base;
-    char *start;
-} Memory;
-
-void *custom_alloc(void *struct_ptr, unsigned long long int size)
-{
-    Memory *memory = (Memory *)struct_ptr;
-    memory->start += size;
-    return memory->start - size;
-}
-
-void *custom_malloc(void *struct_ptr, unsigned long long int size)
-{
-    (void)struct_ptr;
-    return malloc(size);
-}
-
-void *returns_null(void *struct_ptr, unsigned long long int size)
-{
-    (void)struct_ptr;
-    (void)size;
-    return 0;
-}
-
-size_t write_to_string(const void *buffer, size_t size, size_t count, void *stream)
-{
-    String* str = (String *)stream;
-    memcpy(str->start + str->length, buffer, count * size);
-    str->length += count;
-    return count;
-}
 
 void test_values(void)
 {
@@ -102,16 +58,11 @@ void test_values(void)
         jim_object_end(&jim);
     jim_object_end(&jim);
 
-    JMemory *memory = jmem_init();
-    TEST(memory != 0);
-
-    JParser parser = json_init(memory, buffer);
-
-    JValue json = json_parse(&parser);
+    JValue json = json_parse(buffer);
     if (!TEST(json.type == JSON_OBJECT))
         return;
 
-    TEST(json.length == 9);
+    TEST(json.object.length == 9);
 
     JValue number = json_get(&json.object, "number");
     if (TEST(number.type == JSON_NUMBER))
@@ -119,11 +70,11 @@ void test_values(void)
 
     JValue empty_string = json_get(&json.object, "empty_string");
     if (TEST(empty_string.type == JSON_STRING))
-        TEST(empty_string.string == 0);
+        TEST(empty_string.string.data == 0);
 
     JValue string = json_get(&json.object, "string");
     if (TEST(string.type == JSON_STRING))
-        TEST(strcmp(string.string, "test string") == 0);
+        TEST(strcmp(string.string.data, "test string") == 0);
 
     JValue boolean = json_get(&json.object, "bool");
     if (TEST(boolean.type == JSON_BOOL))
@@ -136,50 +87,50 @@ void test_values(void)
     JValue array = json_get(&json.object, "array");
     if (TEST(array.type == JSON_ARRAY))
     {
-        TEST(array.length == 7);
+        TEST(array.array.length == 7);
 
-        JValue array_number = array.array[0];
+        JValue array_number = array.array.data[0];
         if (TEST(array_number.type == JSON_NUMBER))
             TEST(array_number.number == 69);
 
-        JValue array_string = array.array[1];
+        JValue array_string = array.array.data[1];
         if (TEST(array_string.type == JSON_STRING))
-            TEST(strcmp(array_string.string, "another test string") == 0);
+            TEST(strcmp(array_string.string.data, "another test string") == 0);
 
-        JValue array_boolean = array.array[2];
+        JValue array_boolean = array.array.data[2];
         if (TEST(array_boolean.type == JSON_BOOL))
             TEST(!array_boolean.boolean);
 
-        JValue array_null= array.array[3];
+        JValue array_null= array.array.data[3];
         if (TEST(array_null.type == JSON_NULL))
             TEST(array_null.null == 0);
 
-        JValue array_array = array.array[4];
+        JValue array_array = array.array.data[4];
         if (TEST(array_array.type == JSON_ARRAY))
         {
-            JValue array_array_string = array_array.array[0];
+            JValue array_array_string = array_array.array.data[0];
             if (TEST(array_array_string.type == JSON_STRING))
-                TEST(strcmp(array_array_string.string, "yet another test string") == 0);
+                TEST(strcmp(array_array_string.string.data, "yet another test string") == 0);
         }
 
-        JValue array_object = array.array[5];
+        JValue array_object = array.array.data[5];
         if (TEST(array_object.type == JSON_OBJECT))
         {
             JValue array_object_array = json_get(&array_object.object, "test");
             if (TEST(array_object_array.type == JSON_ARRAY))
             {
-                JValue array_object_array_object = array_object_array.array[0];
+                JValue array_object_array_object = array_object_array.array.data[0];
                 if (TEST(array_object_array_object.type == JSON_OBJECT))
                 {
                     JValue array_object_array_object_string = json_get(&array_object_array_object.object, "nested");
                     if (TEST(array_object_array_object_string.type == JSON_STRING))
-                        TEST(strcmp(array_object_array_object_string.string, "nested string") == 0);
+                        TEST(strcmp(array_object_array_object_string.string.data, "nested string") == 0);
                 }
                 
             }
         }
 
-        JValue nested_array_object = array.array[6];
+        JValue nested_array_object = array.array.data[6];
         if (TEST(nested_array_object.type == JSON_OBJECT))
         {
             JValue nested_array_object_number = json_get(&nested_array_object.object, "nested_array_object");
@@ -192,13 +143,13 @@ void test_values(void)
     JValue empty_array = json_get(&json.object, "empty_array");
     if (TEST(empty_array.type == JSON_ARRAY))
     {
-        TEST(empty_array.length == 0);
-        TEST(empty_array.array == 0);
+        TEST(empty_array.array.length == 0);
+        TEST(empty_array.array.data == 0);
     }
 
     JValue empty_object = json_get(&json.object, "empty_object");
     if (TEST(empty_object.type == JSON_OBJECT))
-        TEST(empty_object.object.pairs == 0);
+        TEST(empty_object.object.data == 0);
 
     JValue object = json_get(&json.object, "object");
     if (TEST(object.type == JSON_OBJECT))
@@ -206,80 +157,54 @@ void test_values(void)
         JValue array_object_string = json_get(&object.object, "array_object");
         if (TEST(array_object_string.type == JSON_STRING))
         {
-            TEST(array_object_string.length == 19);
-            TEST(strcmp(array_object_string.string, "array object string") == 0);
+            TEST(array_object_string.string.length == 19);
+            TEST(strcmp(array_object_string.string.data, "array object string") == 0);
         }
     }
-
-    jmem_free(memory);
 }
 
 void test_errors(void)
 {
     const char* input = "{\"key\":}";
 
-    JMemory *memory = jmem_init();
-    TEST(memory != 0);
-
-    JParser parser = json_init(memory, input);
-
-    JValue json = json_parse(&parser);
+    JValue json = json_parse(input);
     TEST(json.type == JSON_ERROR);
     TEST(json.error == JSON_PARSE_ERROR);
 
-    jmem_free(memory);
-
     const char* input_2 = "{\"key\":69}";
 
-    memory = jmem_init();
-    TEST(memory != 0);
-
-    parser = json_init(memory, input_2);
-    json = json_parse(&parser);
+    json = json_parse(input_2);
     TEST(json.type == JSON_OBJECT);
     
     JValue key_not_found = json_get(&json.object, "error_key");
     TEST(key_not_found.type == JSON_ERROR);
     TEST(key_not_found.error == JSON_KEY_NOT_FOUND);
 
-    jmem_free(memory);
 }
 
 void test_single_array(void)
 {
     const char* input = "[69]";
 
-    JMemory *memory = jmem_init();
-    TEST(memory != 0);
-
-    JParser parser = json_init(memory, input);
-
-    JValue array = json_parse(&parser);
+    JValue array = json_parse(input);
     if (TEST(array.type == JSON_ARRAY))
     {
-        JValue array_number = array.array[0];
+        JValue array_number = array.array.data[0];
         if (TEST(array_number.type == JSON_NUMBER))
             TEST(array_number.number == 69);
     }
-
-    jmem_free(memory);
 }
 
 void test_memory_error(void)
 {
     const char* input = "{\"k\":\"v\"}";
 
-    JMemory *memory = jmem_init();
-    TEST(memory != 0);
-
-    JMemory fake_memory = { .base = memory->base, .alloc = returns_null, .struct_ptr = 0 };
-    JParser parser = json_init(&fake_memory, input);
-    JValue json = json_parse(&parser);
+    JMemory memory;
+    memory.alloc = returns_null;
+    JValue json = json_parse_custom(&memory, input);
 
     if (TEST(json.type == JSON_ERROR))
         TEST(json.error == JSON_MEMORY_ERROR);
-
-    jmem_free(memory);
 }
 
 void test_input(void)
@@ -287,116 +212,84 @@ void test_input(void)
     {
         const char* string_literal_input = "{\"k\":\"v\"}";
 
-        JMemory *memory = jmem_init();
-        TEST(memory != 0);
-
-        JParser parser = json_init(memory, string_literal_input);
-        JValue json = json_parse(&parser);
+        JValue json = json_parse(string_literal_input);
 
         if (TEST(json.type == JSON_OBJECT))
         {
             JValue object_string = json_get(&json.object, "k");
             if (TEST(object_string.type == JSON_STRING))
             {
-                TEST(object_string.length == 1);
-                TEST(object_string.string[0] == 'v');
+                TEST(object_string.string.length == 1);
+                TEST(object_string.string.data[0] == 'v');
             }
         }
 
-        jmem_free(memory);
     }
-
     {
-        JMemory *memory = jmem_init();
-        TEST(memory != 0);
-
         char *file_input = read_file_as_str("tests/test_input.json");
-
-        JParser parser = json_init(memory, file_input);
-        JValue json = json_parse(&parser);
+        JValue json = json_parse(file_input);
         if (TEST(json.type == JSON_OBJECT))
         {
-            JValue object_array = json_get(&json.object, "test key");
-            if (TEST(object_array.type == JSON_ARRAY))
+            JValue array = json_get(&json.object, "array");
+            if (TEST(array.type == JSON_ARRAY))
             {
-                TEST(object_array.length == 1);
-                JValue array_string = object_array.array[0];
-                if (TEST(array_string.type == JSON_STRING))
+                JValue object = array.array.data[5];
+                if (TEST(object.type == JSON_OBJECT))
                 {
-                    TEST(array_string.length == 10);
-                    TEST(strcmp(array_string.string, "test value") == 0);
+                    JValue object_array = json_get(&object.object, "test");
+                    if (TEST(object_array.type == JSON_ARRAY))
+                    {
+                        JValue object_array_object = object_array.array.data[0];
+                        if (TEST(object_array_object.type == JSON_OBJECT))
+                        {
+                            JValue object_array_object_string = json_get(&object_array_object.object, "nested");
+                            if (TEST(object_array_object_string.type == JSON_STRING))
+                            {
+                                printf("nested string: %s, length: %llu\n", object_array_object_string.string.data, object_array_object_string.string.length);
+                            }
+                        }
+                    }
                 }
             }
         }
-
-        jmem_free(memory);
         free(file_input);
     }
 
     {
-        JMemory *memory = jmem_init();
-        TEST(memory != 0);
-
         char stack_input[] = "[\"hello, stack!\"]";
-
-        JParser parser = json_init(memory, stack_input);
-        JValue array = json_parse(&parser);
+        JValue array = json_parse(stack_input);
         if (TEST(array.type == JSON_ARRAY))
         {
-            TEST(array.length == 1);
-            JValue array_string = array.array[0];
+            TEST(array.array.length == 1);
+            JValue array_string = array.array.data[0];
             if (TEST(array_string.type == JSON_STRING))
             {
-                TEST(array_string.length == 13);
-                TEST(strcmp(array_string.string, "hello, stack!") == 0);
+                TEST(array_string.array.length == 13);
+                TEST(strcmp(array_string.string.data, "hello, stack!") == 0);
             }
         }
 
-        jmem_free(memory);
     }
 }
 
 void test_memory(void)
 {
     {
-        JMemory memory = {.base = (char *)malloc(1024), .alloc = custom_malloc, .struct_ptr = 0};
-
-        char malloc_input[] = "[\"hello, malloc!\"]";
-
-        JParser parser = json_init(&memory, malloc_input);
-        JValue array = json_parse(&parser);
-        if (TEST(array.type == JSON_ARRAY))
-        {
-            TEST(array.length == 1);
-            JValue array_string = array.array[0];
-            if (TEST(array_string.type == JSON_STRING))
-            {
-                TEST(array_string.length == 14);
-                TEST(strcmp(array_string.string, "hello, malloc!") == 0);
-                free(array_string.string);
-            }
-        }
-
-        free(memory.base);
-    }
-
-    {
         char mem[256];
-        Memory custom = {.base = mem, .start = mem};
-        JMemory memory = {.base = custom.base, .alloc = custom_alloc, .struct_ptr = &custom};
-        
+        JMemory memory = {.base = mem, .alloc = custom_alloc};
+        test_memory_buffer_base = mem;
+
         char stack_input[] = "[\"hello, stack!\"]";
 
-        JParser parser = json_init(&memory, stack_input);
-        JValue array = json_parse(&parser);
+        JValue array = json_parse_custom(&memory, stack_input);
         if (TEST(array.type == JSON_ARRAY))
         {
-            TEST(array.length == 1);
-            JValue array_string = array.array[0];
+            TEST(array.array.length == 1);
+            JValue array_string = array.array.data[0];
             if (TEST(array_string.type == JSON_STRING))
             {
-                TEST(array_string.length == 13);
-                TEST(strcmp(array_string.string, "hello, stack!") == 0);
+                TEST(array_string.string.length == 13);
+                TEST(strcmp(array_string.string.data, "hello, stack!") == 0);
             }
         }
     }
@@ -414,7 +307,10 @@ Test tests[] = {
 int main(void)
 {
     for (size_t i = 0; i < COUNT(tests); ++i)
+    {
+        printf("test %s\n", tests[i].name);
         tests[i].f();
+    }
 
-    TOTAL_ERRORS
+    TOTAL_ERRORS();
 }

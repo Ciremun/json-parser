@@ -1,10 +1,12 @@
-#define JMEM_IMPLEMENTATION
-#include "../jmem.h"
-
 #define JP_IMPLEMENTATION
 #include "../jp.h"
 
 #include <stdio.h>
+
+void *custom_malloc(unsigned long long int size)
+{
+    return malloc(size);
+}
 
 int main(void)
 {
@@ -29,9 +31,7 @@ int main(void)
 
     printf("%s\n", input);
 
-    JMemory *memory = jmem_init();
-    JParser parser = json_init(memory, input);
-    JValue json = json_parse(&parser);
+    JValue json = json_parse(input);
 
     if (json.type == JSON_OBJECT)
     {
@@ -43,8 +43,8 @@ int main(void)
             printf("id.number: %lld\n", id.number);
         if (name.type == JSON_STRING)
         {
-            printf("name.string: %s\n", name.string);
-            printf("name.length: %llu\n", name.length);
+            printf("name.string: %s\n", name.string.data);
+            printf("name.length: %llu\n", name.string.length);
         }
         if (notifications.type == JSON_OBJECT)
         {
