@@ -12,6 +12,9 @@
 // TODO(#23): escapes
 // TODO(#17): examples
 // TODO(#14): tests
+// TODO(Ciremun): remove pairs_total from parser
+// TODO(Ciremun): move input pos to parser
+// TODO(Ciremun): move JValue length to the corresponding value struct
 #if !defined(NDEBUG)
 #define UNEXPECTED_EOF(pos)                                                    \
     do                                                                         \
