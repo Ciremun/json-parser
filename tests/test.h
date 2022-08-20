@@ -44,11 +44,6 @@ void *custom_alloc(unsigned long long int size)
     return test_memory_buffer_base - size;
 }
 
-void *custom_malloc(unsigned long long int size)
-{
-    return malloc(size);
-}
-
 void *returns_null(unsigned long long int size)
 {
     (void)size;

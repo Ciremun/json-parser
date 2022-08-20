@@ -6,6 +6,20 @@
 #include <stdlib.h>
 #endif // NDEBUG
 
+#ifndef NOSTDLIB
+
+#ifndef JP_DEFAULT_ALLOC
+#include <stdlib.h>
+#define JP_DEFAULT_ALLOC malloc
+#endif // JP_DEFAULT_ALLOC
+
+#ifndef JP_ALLOC_SIZE_TYPE
+#include <stdint.h>
+#define JP_ALLOC_SIZE_TYPE size_t
+#endif // JP_ALLOC_SIZE_TYPE
+
+#endif // NOSTDLIB
+
 // TODO(#21): utf8
 // TODO(#22): hex
 // TODO(#23): escapes
@@ -39,7 +53,7 @@ typedef enum
 typedef struct
 {
     char *base;
-    void *(*alloc)(unsigned long long int size);
+    void *(*alloc)(JP_ALLOC_SIZE_TYPE size);
 } JMemory;
 
 typedef struct
@@ -100,9 +114,9 @@ int json_skip_whitespaces(JParser *parser);
 int json_memcmp(const void *str1, const void *str2, jsize_t count);
 int json_strcmp(const char *p1, const char *p2);
 void *json_memcpy(void *dst, void const *src, jsize_t size);
-JParser json_init(JMemory *memory, const char *input);
 JValue json_get(JObject *object, const char *key);
-JValue json_parse(JParser *parser);
+JValue json_parse(const char *input);
+JValue json_parse_custom(JMemory *memory, const char *input);
 JValue json_parse_object(JParser *parser);
 JValue json_parse_value(JParser *parser);
 JValue json_parse_string(JParser *parser);
@@ -213,7 +227,7 @@ void *json_memcpy(void *dst, void const *src, jsize_t size)
     return dst;
 }
 
-JParser json_init(JMemory *memory, const char *input)
+JParser json_init_parser(JMemory *memory, const char *input)
 {
     JParser parser;
     parser.memory = memory;
@@ -228,6 +242,20 @@ JParser json_init(JMemory *memory, const char *input)
     return parser;
 }
 
+JValue json_parse(const char *input)
+{
+    JMemory memory;
+    memory.alloc = JP_DEFAULT_ALLOC;
+    return json_parse_custom(&memory, input);
+}
+
+JValue json_parse_custom(JMemory *memory, const char *input)
+{
+    JParser parser = json_init_parser(memory, input);
+    json_skip_whitespaces(&parser);
+    return json_parse_value(&parser);
+}
+
 JValue json_get(JObject *object, const char *key)
 {
     for (jsize_t i = 0; i < object->length; ++i)
@@ -240,12 +268,6 @@ JValue json_get(JObject *object, const char *key)
     fprintf(stderr, "key \"%s\" was not found\n", key);
 #endif // NDEBUG
     return value;
-}
-
-JValue json_parse(JParser *parser)
-{
-    json_skip_whitespaces(parser);
-    return json_parse_value(parser);
 }
 
 JValue json_parse_string(JParser *parser)
@@ -542,7 +564,7 @@ parse_pair:
             }
         }
 
-        (parser->pos)--;
+        parser->pos--;
 
         JValue key_value = json_parse_string(parser);
         if (key_value.type == JSON_ERROR)

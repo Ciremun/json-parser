@@ -58,11 +58,7 @@ void test_values(void)
         jim_object_end(&jim);
     jim_object_end(&jim);
 
-    JMemory memory;
-    memory.alloc = custom_malloc;
-    JParser parser = json_init(&memory, buffer);
-
-    JValue json = json_parse(&parser);
+    JValue json = json_parse(buffer);
     if (!TEST(json.type == JSON_OBJECT))
         return;
 
@@ -171,19 +167,13 @@ void test_errors(void)
 {
     const char* input = "{\"key\":}";
 
-    JMemory memory;
-    memory.alloc = custom_malloc;
-    JParser parser = json_init(&memory, input);
-
-    JValue json = json_parse(&parser);
+    JValue json = json_parse(input);
     TEST(json.type == JSON_ERROR);
     TEST(json.error == JSON_PARSE_ERROR);
 
-
     const char* input_2 = "{\"key\":69}";
 
-    parser = json_init(&memory, input_2);
-    json = json_parse(&parser);
+    json = json_parse(input_2);
     TEST(json.type == JSON_OBJECT);
     
     JValue key_not_found = json_get(&json.object, "error_key");
@@ -196,11 +186,7 @@ void test_single_array(void)
 {
     const char* input = "[69]";
 
-    JMemory memory;
-    memory.alloc = custom_malloc;
-    JParser parser = json_init(&memory, input);
-
-    JValue array = json_parse(&parser);
+    JValue array = json_parse(input);
     if (TEST(array.type == JSON_ARRAY))
     {
         JValue array_number = array.array.data[0];
@@ -215,8 +201,7 @@ void test_memory_error(void)
 
     JMemory memory;
     memory.alloc = returns_null;
-    JParser parser = json_init(&memory, input);
-    JValue json = json_parse(&parser);
+    JValue json = json_parse_custom(&memory, input);
 
     if (TEST(json.type == JSON_ERROR))
         TEST(json.error == JSON_MEMORY_ERROR);
@@ -227,11 +212,7 @@ void test_input(void)
     {
         const char* string_literal_input = "{\"k\":\"v\"}";
 
-        JMemory memory;
-        memory.alloc = custom_malloc;
-        JParser parser = json_init(&memory, string_literal_input);
-
-        JValue json = json_parse(&parser);
+        JValue json = json_parse(string_literal_input);
 
         if (TEST(json.type == JSON_OBJECT))
         {
@@ -246,10 +227,7 @@ void test_input(void)
     }
     {
         char *file_input = read_file_as_str("tests/test_input.json");
-        JMemory memory;
-        memory.alloc = custom_malloc;
-        JParser parser = json_init(&memory, file_input);
-        JValue json = json_parse(&parser);
+        JValue json = json_parse(file_input);
         if (TEST(json.type == JSON_OBJECT))
         {
             JValue array = json_get(&json.object, "array");
@@ -278,13 +256,8 @@ void test_input(void)
     }
 
     {
-        JMemory memory;
-        memory.alloc = custom_malloc;
-
         char stack_input[] = "[\"hello, stack!\"]";
-
-        JParser parser = json_init(&memory, stack_input);
-        JValue array = json_parse(&parser);
+        JValue array = json_parse(stack_input);
         if (TEST(array.type == JSON_ARRAY))
         {
             TEST(array.array.length == 1);
@@ -308,8 +281,7 @@ void test_memory(void)
 
         char stack_input[] = "[\"hello, stack!\"]";
 
-        JParser parser = json_init(&memory, stack_input);
-        JValue array = json_parse(&parser);
+        JValue array = json_parse_custom(&memory, stack_input);
         if (TEST(array.type == JSON_ARRAY))
         {
             TEST(array.array.length == 1);
