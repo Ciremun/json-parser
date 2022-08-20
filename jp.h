@@ -25,7 +25,6 @@
 // TODO(#23): escapes
 // TODO(#17): examples
 // TODO(#14): tests
-// TODO(Ciremun): easy api that doesn't require passing the memory struct
 typedef struct JPair JPair;
 typedef struct JValue JValue;
 typedef unsigned long long int jsize_t;
