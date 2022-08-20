@@ -502,10 +502,10 @@ JValue json_parse_object(JParser *parser, jsize_t *pos)
 
     JPair *pairs_start = (JPair *)(parser->memory->base +
                                    sizeof(JPair) * parser->pairs_commited);
-    JValue object;
-    object.type = JSON_OBJECT;
-    object.object.data = pairs_start;
-    object.object.length = 0;
+    JValue value;
+    value.type = JSON_OBJECT;
+    value.object.data = pairs_start;
+    value.object.length = 0;
 
     jsize_t i = *pos;
     do
@@ -542,8 +542,8 @@ parse_pair:
         {
             if (parser->input[*pos - 1] == '}')
             {
-                object.object.data = 0;
-                return object;
+                value.object.data = 0;
+                return value;
             }
             JValue value;
             value.type = JSON_ERROR;
@@ -587,14 +587,14 @@ parse_pair:
     if (value.type == JSON_ERROR)
         return value;
 
-    object.object.data[object.object.length].key = key;
-    object.object.data[object.object.length].value = value;
-    object.object.length++;
+    value.object.data[value.object.length].key = key;
+    value.object.data[value.object.length].value = value;
+    value.object.length++;
 
     if (!json_skip_whitespaces(parser->input, pos))
         UNEXPECTED_EOF(*pos);
 
-    object.object.length++;
+    value.object.length++;
     if (parser->input[*pos] == ',')
     {
         (*pos)++;
@@ -607,17 +607,17 @@ parse_pair:
             UNEXPECTED_EOF(*pos);
         if (match == JSON_PARSE_ERROR)
         {
-            JValue value;
-            value.type = JSON_ERROR;
-            value.error = JSON_PARSE_ERROR;
+            JValue error_value;
+            error_value.type = JSON_ERROR;
+            error_value.error = JSON_PARSE_ERROR;
 #if !defined(NDEBUG)
             fprintf(stderr, "expected '%c' found '%c' at %llu\n", '}',
                     parser->input[*pos - 1], *pos - 1);
 #endif // NDEBUG
-            return value;
+            return error_value;
         }
     }
-    return object;
+    return value;
 }
 
 #endif // JP_IMPLEMENTATION
