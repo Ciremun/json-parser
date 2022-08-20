@@ -72,7 +72,7 @@ jobs:
           msys2 -c 'pacman --noconfirm -Suu'
       - name: run tests and examples
         run: |
-          gcc nobuild.c -onobuild && nobuild.exe && nobuild.exe examples
+          gcc nobuild.c -onobuild && ./nobuild && ./nobuild examples
         shell: msys2 {0}
         env:
           CC: gcc
@@ -99,7 +99,7 @@ jobs:
           msys2 -c 'pacman --noconfirm -Suu'
       - name: run tests and examples
         run: |
-          clang nobuild.c -onobuild && nobuild.exe && nobuild.exe examples
+          clang nobuild.c -onobuild && ./nobuild && ./nobuild examples
         shell: msys2 {0}
         env:
           CC: clang
