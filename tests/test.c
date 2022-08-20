@@ -253,10 +253,26 @@ void test_input(void)
         if (TEST(json.type == JSON_OBJECT))
         {
             JValue array = json_get(&json.object, "array");
-            JValue object = array.array.data[5];
-            JValue object_array = json_get(&object.object, "test");
-            JValue object_array_object = object_array.array.data[0];
-            JValue object_array_object_string = json_get(&object_array_object.object, "nested");
+            if (TEST(array.type == JSON_ARRAY))
+            {
+                JValue object = array.array.data[5];
+                if (TEST(object.type == JSON_OBJECT))
+                {
+                    JValue object_array = json_get(&object.object, "test");
+                    if (TEST(object_array.type == JSON_ARRAY))
+                    {
+                        JValue object_array_object = object_array.array.data[0];
+                        if (TEST(object_array_object.type == JSON_OBJECT))
+                        {
+                            JValue object_array_object_string = json_get(&object_array_object.object, "nested");
+                            if (TEST(object_array_object_string.type == JSON_STRING))
+                            {
+                                printf("nested string: %s, length: %llu\n", object_array_object_string.string.data, object_array_object_string.string.length);
+                            }
+                        }
+                    }
+                }
+            }
         }
         free(file_input);
     }
