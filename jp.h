@@ -15,6 +15,7 @@
 // TODO(Ciremun): remove pairs_total from parser
 // TODO(Ciremun): move input pos to parser
 // TODO(Ciremun): move JValue length to the corresponding value struct
+// TODO(Ciremun): turn unexpected eof macro into a function
 #if !defined(NDEBUG)
 #define UNEXPECTED_EOF(pos)                                                    \
     do                                                                         \
