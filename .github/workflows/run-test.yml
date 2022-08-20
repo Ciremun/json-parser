@@ -73,11 +73,10 @@ jobs:
       - name: run tests and examples
         run: |
           gcc nobuild.c -onobuild && nobuild.exe && nobuild.exe examples
-        shell: cmd
+        shell: msys2 {0}
         env:
           CC: gcc
           CXX: g++
-          PATH: D:\a\_temp\msys\msys64\usr\bin;D:\a\_temp\msys\msys64\${{ matrix.msystem_lower }}\bin;D:\a\_temp\msys
   windows-clang:
     runs-on: windows-latest
     strategy:
@@ -101,8 +100,7 @@ jobs:
       - name: run tests and examples
         run: |
           clang nobuild.c -onobuild && nobuild.exe && nobuild.exe examples
-        shell: cmd
+        shell: msys2 {0}
         env:
           CC: clang
           CXX: clang
-          PATH: D:\a\_temp\msys\msys64\usr\bin;D:\a\_temp\msys\msys64\${{ matrix.msystem_lower }}\bin;D:\a\_temp\msys
