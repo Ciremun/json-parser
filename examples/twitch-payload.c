@@ -27,7 +27,7 @@ int main(void)
     printf("%s\n", input);
 
     JMemory memory;
-    memory.alloc = malloc;
+    memory.alloc = custom_malloc;
     JParser parser = json_init(&memory, input);
     JValue json = json_parse(&parser);
 

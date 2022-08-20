@@ -279,18 +279,6 @@ void test_input(void)
             JValue object_array = json_get(&object.object, "test");
             JValue object_array_object = object_array.array[0];
             JValue object_array_object_string = json_get(&object_array_object.object, "nested");
-            printf("string: %s, length: %zu\n", object_array_object_string.string, object_array_object_string.length);
-            // JValue object_array = json_get(&json.object, "test key");
-            // if (TEST(object_array.type == JSON_ARRAY))
-            // {
-            //     TEST(object_array.length == 1);
-            //     JValue array_string = object_array.array[0];
-            //     if (TEST(array_string.type == JSON_STRING))
-            //     {
-            //         TEST(array_string.length == 10);
-            //         TEST(strcmp(array_string.string, "test value") == 0);
-            //     }
-            // }
         }
         free(file_input);
     }

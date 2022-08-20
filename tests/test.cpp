@@ -10,7 +10,7 @@ void test_errors()
     const char *input = "{}";
 
     JMemory memory;
-    memory.alloc = malloc;
+    memory.alloc = custom_malloc;
 
     JParser parser = json_init(&memory, input);
     JValue json = json_parse(&parser);
@@ -29,7 +29,7 @@ void test_values()
     const char *input = "{\"test\": 69}";
 
     JMemory memory;
-    memory.alloc = malloc;
+    memory.alloc = custom_malloc;
 
     JParser parser = json_init(&memory, input);
     JValue json = json_parse(&parser);
@@ -47,7 +47,7 @@ void test_single_values()
     const char *input = "1337";
 
     JMemory memory;
-    memory.alloc = malloc;
+    memory.alloc = custom_malloc;
 
     JParser parser = json_init(&memory, input);
     JValue value = json_parse(&parser);
