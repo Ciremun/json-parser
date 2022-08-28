@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-int main(void)
+int main()
 {
     const char *input = "{\n\
     \"_id\": 6969,\n\
@@ -30,9 +30,9 @@ int main(void)
 
     if (json.type == JSON_OBJECT)
     {
-        JValue id = json_get(&json.object, "_id");
-        JValue name = json_get(&json.object, "name");
-        JValue notifications = json_get(&json.object, "notifications");
+        JValue id = json["_id"];
+        JValue name = json["name"];
+        JValue notifications = json["notifications"];
 
         if (id.type == JSON_NUMBER)
             printf("id.number: %lld\n", id.number);
@@ -43,7 +43,7 @@ int main(void)
         }
         if (notifications.type == JSON_OBJECT)
         {
-            JValue push = json_get(&notifications.object, "push");
+            JValue push = notifications["push"];
             if (push.type == JSON_BOOL)
                 printf("push.boolean: %d\n", push.boolean);
         }

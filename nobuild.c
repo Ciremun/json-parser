@@ -35,8 +35,6 @@ char cxx[32];
 
 void run_tests()
 {
-    SET_COMPILER_EXECUTABLE("cc", cc, DEFAULT_CC);
-    SET_COMPILER_EXECUTABLE("cxx", cxx, DEFAULT_CXX);
     if (strcmp(cc, "cl") == 0)
         CMD(cc, MSVC_CFLAGS, "tests/test.c", "/Fe:", "c-tests");
     else
@@ -53,16 +51,23 @@ int main(int argc, char **argv)
 {
     GO_REBUILD_URSELF(argc, argv);
 
+    SET_COMPILER_EXECUTABLE("cc", cc, DEFAULT_CC);
+    SET_COMPILER_EXECUTABLE("cxx", cxx, DEFAULT_CXX);
+
     if (argc > 1)
     {
         if (strcmp(argv[1], "examples") == 0)
         {
-            SET_COMPILER_EXECUTABLE("cc", cc, DEFAULT_CC);
             if (strcmp(cc, "cl") == 0)
-                CMD(cc, MSVC_CFLAGS, "examples/twitch-payload.c", "/Fe:", "twitch-payload");
+                CMD(cc, MSVC_CFLAGS, "examples/twitch-payload.c", "/Fe:", "twitch-payload-c");
             else
-                CMD(cc, CFLAGS, "examples/twitch-payload.c", "-o", "twitch-payload");
-            RUN("twitch-payload");
+                CMD(cc, CFLAGS, "examples/twitch-payload.c", "-o", "twitch-payload-c");
+            RUN("twitch-payload-c");
+            if (strcmp(cc, "cl") == 0)
+                CMD(cc, MSVC_CFLAGS, "examples/twitch-payload.cpp", "/Fe:", "twitch-payload-cpp");
+            else
+                CMD(cc, CFLAGS, "examples/twitch-payload.cpp", "-o", "twitch-payload-cpp");
+            RUN("twitch-payload-cpp");
             return 0;
         }
     }
