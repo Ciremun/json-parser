@@ -58,15 +58,16 @@ int main(int argc, char **argv)
     {
         if (strcmp(argv[1], "examples") == 0)
         {
-            if (strcmp(cc, "cl") == 0)
+            int cl = strcmp(cc, "cl") == 0;
+            if (cl)
                 CMD(cc, MSVC_CFLAGS, "examples/twitch-payload.c", "/Fe:", "twitch-payload-c");
             else
                 CMD(cc, CFLAGS, "examples/twitch-payload.c", "-o", "twitch-payload-c");
             RUN("twitch-payload-c");
-            if (strcmp(cc, "cl") == 0)
-                CMD(cc, MSVC_CFLAGS, "examples/twitch-payload.cpp", "/Fe:", "twitch-payload-cpp");
+            if (cl)
+                CMD(cc, MSVC_CXXFLAGS, "examples/twitch-payload.cpp", "/Fe:", "twitch-payload-cpp");
             else
-                CMD(cc, CFLAGS, "examples/twitch-payload.cpp", "-o", "twitch-payload-cpp");
+                CMD(cc, CXXFLAGS, "examples/twitch-payload.cpp", "-o", "twitch-payload-cpp");
             RUN("twitch-payload-cpp");
             return 0;
         }
