@@ -1,0 +1,12 @@
+textarea {
+    font-size: 40pt;
+}
+
+.content {
+    width: 100vw;
+    display: flex;
+}
+
+#input, #output {
+    width: 50%;
+}
