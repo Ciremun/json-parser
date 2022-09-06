@@ -16,8 +16,13 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-let input = document.getElementById('input');
-let output = document.getElementById('output');
+let term = document.getElementById('term');
+term.addEventListener('keydown', (e) => {
+    if (e.keyCode === 13)
+        e.preventDefault();
+    if (e.keyCode === 8 && term.value === '> ')
+        e.preventDefault();
+});
 
 let memory = new WebAssembly.Memory({ initial: 4096 });
 let HEAP8 = new Int8Array(memory.buffer);
@@ -47,19 +52,33 @@ let imports = {
     env: {
         memory: memory,
         print: console.log,
-        output_result: (str) => { output.value = toUTF8(str); },
+        output_result: (str) => {
+            term.value += toUTF8(str);
+            term.value += '\n> ';
+            term.scrollTop = term.scrollHeight;
+        },
     }
 }
 
 WebAssembly.instantiate(array, imports).then(
     function (wa) {
-        input.addEventListener('input', () => {
-            let encoder = new TextEncoder();
-            let bytes = encoder.encode(input.value);
-            let ptr = wa.instance.exports.wasm_alloc(BigInt(bytes.byteLength));
-            let buffer = new Uint8Array(memory.buffer, ptr, bytes.byteLength + 1);
-            buffer.set(bytes);
-            wa.instance.exports.parse_json(ptr);
+        term.addEventListener('keyup', (e) => {
+            if (e.keyCode === 13)
+            {
+                let lines = term.value.split('\n');
+                let command = lines[lines.length - 1].split(' ').slice(1).join(' ');
+                term.value += '\n> ';
+                if (!command)
+                    return;
+                let encoder = new TextEncoder();
+                let bytes = encoder.encode(command);
+                let ptr = wa.instance.exports.wasm_alloc(BigInt(bytes.byteLength));
+                let buffer = new Uint8Array(memory.buffer, ptr, bytes.byteLength + 1);
+                buffer.set(bytes);
+                wa.instance.exports.parse_json(ptr);
+                return;
+            }
+            if (term.value === '') term.value = '> ';
         });
     }
 );

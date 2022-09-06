@@ -37,7 +37,6 @@ const char *json_type_to_string(JType type)
 
 void EXPORT("parse_json") parse_json(const char* input)
 {
-    output_result(input);
     JValue json = json_parse(input);
     output_result(json_type_to_string(json.type));
 }
