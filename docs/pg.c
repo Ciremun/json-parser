@@ -58,8 +58,7 @@ void EXPORT("parse_json") parse_json(const char* input)
         unsigned long long int size = 0;
         while (error[size] != 0)
             size++;
-        json_memcpy(result, "JSON_ERROR", 10);
-        json_memcpy(result + 10, ": ", 2);
+        json_memcpy(result, "JSON_ERROR: ", 12);
         json_memcpy(result + 12, error, size);
         output_result(result);
     }
