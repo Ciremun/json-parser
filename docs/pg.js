@@ -18,8 +18,6 @@
 
 let term = document.getElementById('term');
 term.addEventListener('keydown', (e) => {
-    if (e.keyCode === 13)
-        e.preventDefault();
     if (e.keyCode === 8 && term.value === '> ')
         e.preventDefault();
 });
@@ -113,7 +111,7 @@ let imports = {
         print: console.log,
         output_result: (str) => {
             term.value += toUTF8(str);
-            term.value += '\n> ';
+            term.value += "\n> ";
             term.scrollTop = term.scrollHeight;
         },
     }
@@ -121,12 +119,17 @@ let imports = {
 
 WebAssembly.instantiate(array, imports).then(
     function (wa) {
-        term.addEventListener('keyup', (e) => {
-            if (e.keyCode === 13)
+        term.addEventListener('textInput', (e) => {
+            if (e.data.slice(-1)[0] == '\n')
             {
+                e.preventDefault();
+                console.log("should run the function!");
                 let lines = term.value.split('\n');
+                console.log(lines);
                 let command = lines[lines.length - 1].split(' ').slice(1).join(' ');
+                console.log(command);
                 term.value += '\n> ';
+                term.scrollTop = term.scrollHeight;
                 if (!command)
                     return;
                 let encoder = new TextEncoder();
@@ -135,9 +138,8 @@ WebAssembly.instantiate(array, imports).then(
                 let buffer = new Uint8Array(memory.buffer, ptr, bytes.byteLength + 1);
                 buffer.set(bytes);
                 wa.instance.exports.parse_json(ptr);
-                return;
             }
-            if (term.value === '') term.value = '> ';
+            else if (term.value === '') term.value = '> ';
         });
     }
 );
