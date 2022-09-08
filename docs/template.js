@@ -52,8 +52,6 @@ let imports = {
         print: console.log,
         output_result: (str) => {
             term.value += toUTF8(str);
-            term.value += "\n> ";
-            term.scrollTop = term.scrollHeight;
         },
     }
 }
@@ -64,11 +62,8 @@ WebAssembly.instantiate(array, imports).then(
             if (e.data.slice(-1)[0] == '\n')
             {
                 e.preventDefault();
-                console.log("should run the function!");
                 let lines = term.value.split('\n');
-                console.log(lines);
                 let command = lines[lines.length - 1].split(' ').slice(1).join(' ');
-                console.log(command);
                 term.value += '\n> ';
                 term.scrollTop = term.scrollHeight;
                 if (!command)
@@ -79,6 +74,8 @@ WebAssembly.instantiate(array, imports).then(
                 let buffer = new Uint8Array(memory.buffer, ptr, bytes.byteLength + 1);
                 buffer.set(bytes);
                 wa.instance.exports.parse_json(ptr);
+                term.value += "\n> ";
+                term.scrollTop = term.scrollHeight;
             }
             else if (term.value === '') term.value = '> ';
         });
