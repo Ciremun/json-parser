@@ -408,7 +408,7 @@ JValue json_parse_array(JParser *parser)
             open_bracket_count--;
         if (parser->input[start_pos] == '"')
             inside_string = !inside_string;
-        if (!inside_string && parser->input[start_pos] == ',')
+        if (!inside_string && open_bracket_count == 1 && parser->input[start_pos] == ',')
             array_values_count++;
         start_pos++;
     } while (open_bracket_count != 0);
